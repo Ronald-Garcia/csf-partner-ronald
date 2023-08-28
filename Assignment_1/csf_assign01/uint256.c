@@ -9,7 +9,16 @@
 // all other bits are set to 0.
 UInt256 uint256_create_from_u32(uint32_t val) {
   UInt256 result;
-  // TODO: implement
+  
+  // set the least significant bit to the value passed
+  result.data[0] = val;
+
+  // set all other bits to zero
+  for(int i = 0; i < 8; i++) {
+    result.data[i] = 0;
+  }
+
+  // return the new UInt256
   return result;
 }
 
