@@ -37,7 +37,40 @@ UInt256 uint256_create(const uint32_t data[8]) {
 // Create a UInt256 value from a string of hexadecimal digits.
 UInt256 uint256_create_from_hex(const char *hex) {
   UInt256 result;
-  // TODO: implement
+  //Find the strelen
+  int string_length = strlen(hex);
+  //If there is more than 64 characters, only look at the right most 64
+  if (string_length > 64){
+    hex = &hex[string_length - 64];
+    string_length = 64;
+  }
+  int i;
+  //make a string from increments of the hex string, then convert and store as ul.
+  for (i = 1; i * 8 < string_length; i++) {
+    //for loop for conversion of string.
+    char temp_string[9];
+    for (int j = 0; j < 8; j++) {
+      temp_string[j] = hex[string_length - (i * 8) + j];
+    }
+    //add null terminator to end.
+    temp_string[8] = '\0';
+    //convert and store.
+    result.data[i-1] = strtoul(temp_string, NULL, 16);
+  }
+  //implement special case for incomplete
+  //remaining characters = string_length - (i - 1) * 8
+  int remaining_chars = string_length - ((i - 1) * 8);
+  char temp_string[remaining_chars + 1];
+  for (int k = 0; k < remaining_chars; k++){
+    temp_string[k] = hex[k];
+  }
+  //Add null terminator to smaller string, convert it to number and store.
+  temp_string[remaining_chars] = '\0';
+  result.data[i - 1] = strtoul(temp_string, NULL, 16);
+  //Set everything else to 0.
+  for (int k = i; k < 8; k++){
+    result.data[k] = 0;
+  }
   return result;
 }
 
