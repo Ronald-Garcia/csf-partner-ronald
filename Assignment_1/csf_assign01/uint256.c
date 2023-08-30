@@ -179,15 +179,22 @@ UInt256 uint256_sub(UInt256 left, UInt256 right) {
 
 // Return the two's-complement negation of the given UInt256 value.
 UInt256 uint256_negate(UInt256 val) {
+  
+  // the return variable
   UInt256 result;
+
+  // the value of one
   UInt256 one = uint256_create_from_u32(1);
 
-  for(int i = 0; i < 8; i++) {
+  // invert each bit
+  for (int i = 0; i < 8; i++) {
     val.data[i] = ~val.data[i];
   }
 
+  // add one to the inverted value
   result = uint256_add(one, val);
 
+  // return the result
   return result;
 }
 
