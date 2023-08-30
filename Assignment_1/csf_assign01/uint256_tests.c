@@ -164,6 +164,12 @@ void test_create_from_hex(TestObjs *objs) {
 
   UInt256 max = uint256_create_from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
   ASSERT_SAME(objs->max, max);
+
+  UInt256 two_and_a_half_bits = uint256_create_from_hex("a5b5c6c6ca5b5c6c6c12");
+  uint32_t dat[8] = {1550609426,3334916699,42421,0,0,0,0,0};
+  UInt256 test_two_half = uint256_create(dat);
+  ASSERT_SAME(test_two_half, two_and_a_half_bits);
+
 }
 
 void test_format_as_hex(TestObjs *objs) {

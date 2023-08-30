@@ -39,38 +39,58 @@ UInt256 uint256_create_from_hex(const char *hex) {
   UInt256 result;
   //Find the strelen
   int string_length = strlen(hex);
+  
   //If there is more than 64 characters, only look at the right most 64
-  if (string_length > 64){
+  if (string_length > 64) {
     hex = &hex[string_length - 64];
     string_length = 64;
   }
-  int i;
-  //make a string from increments of the hex string, then convert and store as ul.
-  for (i = 1; i * 8 < string_length; i++) {
-    //for loop for conversion of string.
-    char temp_string[9];
-    for (int j = 0; j < 8; j++) {
-      temp_string[j] = hex[string_length - (i * 8) + j];
+
+  // get remaining characters (the "extra" block)
+  int remaining_chars = string_length % 8;
+  // get the current most significant bit (7 being most significant)
+  int cur_index = string_length / 8;
+
+  // set the more significant bits (if there are any) to 0
+  for (int i = 8; i > cur_index; i--) {
+    result.data[i] = 0;
+  }
+
+  // create temp string to save 8 block bits
+  char temp_string[9];
+
+  // if there is an unfilled bit,
+  if (remaining_chars != 0) {
+    // save all the characters
+    for (int i = 0; i < remaining_chars; i++) {
+      temp_string[i] = hex[i];
     }
-    //add null terminator to end.
+    // terminate the string
+    temp_string[remaining_chars] = '\0';
+    // save the number in the most significant bit
+    result.data[cur_index] = strtoul(temp_string, NULL, 16);
+  }
+
+  // move the hex ptr to the start of the next bit
+  hex = &hex[remaining_chars];
+  // move to the next most significant digit
+  cur_index--;
+
+  // for all indices
+  while(cur_index >= 0) {
+    // save the 8 character long bit
+    for (int j = 0; j < 8; j++) {
+      temp_string[j] = hex[j];
+    }
+    // terminate string
     temp_string[8] = '\0';
-    //convert and store.
-    result.data[i-1] = strtoul(temp_string, NULL, 16);
+    // add it to the current bit and move to the next
+    result.data[cur_index--] = strtoul(temp_string, NULL, 16);
+    // move to the start of the next bit
+    hex = &hex[8];
   }
-  //implement special case for incomplete
-  //remaining characters = string_length - (i - 1) * 8
-  int remaining_chars = string_length - ((i - 1) * 8);
-  char temp_string[remaining_chars + 1];
-  for (int k = 0; k < remaining_chars; k++){
-    temp_string[k] = hex[k];
-  }
-  //Add null terminator to smaller string, convert it to number and store.
-  temp_string[remaining_chars] = '\0';
-  result.data[i - 1] = strtoul(temp_string, NULL, 16);
-  //Set everything else to 0.
-  for (int k = i; k < 8; k++){
-    result.data[k] = 0;
-  }
+  
+  // return the result
   return result;
 }
 
