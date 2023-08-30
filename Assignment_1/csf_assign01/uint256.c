@@ -137,24 +137,60 @@ uint32_t uint256_get_bits(UInt256 val, unsigned index) {
 
 // Compute the sum of two UInt256 values.
 UInt256 uint256_add(UInt256 left, UInt256 right) {
+
+  // variable to return
   UInt256 sum;
-  // TODO: implement
+  
+  // flag to see whether or not we should carry over
+  int flag = 0;
+
+  // loop through each bit
+  for(int i = 0; i < 8; i++) {
+
+    // get the left bit
+    uint32_t l = left.data[i];
+    // get the right bit
+    uint32_t r = right.data[i];
+    // add them together (plus the carry from the previous bit)
+    uint32_t s = l + r + flag;
+
+    // save the sum
+    sum.data[i] = s;
+
+    // store the carry (if an overflow occured, a carry is to be added to the next bit)
+    flag = (s < l) || (s < r);
+  }
+
+  // return the sum
   return sum;
 }
 
 // Compute the difference of two UInt256 values.
 UInt256 uint256_sub(UInt256 left, UInt256 right) {
+  // variable to return
   UInt256 result;
-  // TODO: implement
+  // negate the right term
+  UInt256 neg_right = uint256_negate(right);
+
+  // add the left and the negative of the right
+  result = uint256_add(left, neg_right);
   return result;
 }
 
 // Return the two's-complement negation of the given UInt256 value.
 UInt256 uint256_negate(UInt256 val) {
   UInt256 result;
-  // TODO: implement
+  UInt256 one = uint256_create_from_u32(1);
+
+  for(int i = 0; i < 8; i++) {
+    val.data[i] = ~val.data[i];
+  }
+
+  result = uint256_add(one, val);
+
   return result;
 }
+
 
 // Return the result of rotating every bit in val nbits to
 // the left.  Any bits shifted past the most significant bit
