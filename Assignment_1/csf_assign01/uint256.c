@@ -97,24 +97,31 @@ UInt256 uint256_create_from_hex(const char *hex) {
 // Return a dynamically-allocated string of hex digits representing the
 // given UInt256 value.
 char *uint256_format_as_hex(UInt256 val) {
-  char *hex = malloc(sizeof(char) * 65);
+
   //Malloc a sufficiently large buffer array to store 64 letters plus null terminator.
+  char *hex = calloc(65, sizeof(char));
+  int size_of_hex = 0;
+
   //Assumes each index can be represented in at most 8 letters.
-  char buffer [65];
+  char buffer [9];
+
   //Loop through each element in val, adding to buffer, from most to least significant.
   for (int i = 7; i > 0; i--) {
     //Check to not write extra zeros in.
     if (val.data[i] != 0){
       sprintf(buffer, "%x", val.data[i]);
+      for (int j = 0; j < 8; j++) {
+        hex[size_of_hex] = buffer[j];
+        size_of_hex++;
+      }
     }
-    printf ("%d. %d\n", i,val.data[i]);
   }
-  printf ("0. %d\n",val.data[0]);
-  //At the end, need to write whatever is left to buffer, even 0.
-  sprintf(buffer, "%x", val.data[0]);
-  //Deep copy of buffer to hex..
-  for(int i = 0; i < strlen(buffer); i++){
-    hex[i] = buffer[i];
+  //At the end, need to write whatever is left to buffer, no matter what.
+  int nums_copied = sprintf(buffer, "%x", val.data[0]);
+
+  //copy the buffer to hex.
+  for(int i = 0; i < nums_copied; i++){
+    hex[size_of_hex + i] = buffer[i];
   }
   return hex;
 }
