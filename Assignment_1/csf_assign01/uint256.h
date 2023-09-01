@@ -1,3 +1,12 @@
+/*
+ * Header file for uint256 functions
+ * CSF Assignment 1
+ * Ronald Garcia
+ * Cameron Kolisko
+ * rgarci47@jh.edu
+ * ckolisk1@jh.edu
+ */
+
 #ifndef UINT256_H
 #define UINT256_H
 

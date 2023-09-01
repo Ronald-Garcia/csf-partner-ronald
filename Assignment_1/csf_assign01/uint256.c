@@ -1,12 +1,22 @@
+/*
+ * Source file for uint256 functions
+ * CSF Assignment 1
+ * Ronald Garcia
+ * Cameron Kolisko
+ * rgarci47@jh.edu
+ * ckolisk1@jh.edu
+ */
+
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "uint256.h"
 
-// Create a UInt256 value from a single uint32_t value.
-// Only the least-significant 32 bits are initialized directly,
-// all other bits are set to 0.
+/** Function to create a uint256 from uint32_t value (least significant)
+ * @param val the uint32_t value
+ * @return the new uint256 number.
+ */
 UInt256 uint256_create_from_u32(uint32_t val) {
   UInt256 result;
   
@@ -22,9 +32,10 @@ UInt256 uint256_create_from_u32(uint32_t val) {
   return result;
 }
 
-// Create a UInt256 value from an array of NWORDS uint32_t values.
-// The element at index 0 is the least significant, and the element
-// at index 8 is the most significant.
+/** Function to create a uint256 from an array of 8 uint32s
+ * @param data the list of uint32_t's to save
+ * @return the new uint256
+ */
 UInt256 uint256_create(const uint32_t data[8]) {
   UInt256 result;
   for (int i = 0; i < 8; i ++){
@@ -34,7 +45,11 @@ UInt256 uint256_create(const uint32_t data[8]) {
   return result;
 }
 
-// Create a UInt256 value from a string of hexadecimal digits.
+
+/** Function to create a uint256 from a hex code
+ * @param hex the hex value as a string
+ * @return the new uint256
+ */
 UInt256 uint256_create_from_hex(const char *hex) {
   UInt256 result;
   //Find the strelen
@@ -94,8 +109,10 @@ UInt256 uint256_create_from_hex(const char *hex) {
   return result;
 }
 
-// Return a dynamically-allocated string of hex digits representing the
-// given UInt256 value.
+/** Function to return the hex code associated with a uint256 value
+ * @param val the uint256 value
+ * @return the hex code as a string
+ */
 char *uint256_format_as_hex(UInt256 val) {
 
   //Malloc a sufficiently large buffer array to store 64 letters plus null terminator.
@@ -126,16 +143,23 @@ char *uint256_format_as_hex(UInt256 val) {
   return hex;
 }
 
-// Get 32 bits of data from a UInt256 value.
-// Index 0 is the least significant 32 bits, index 8 is the most
-// significant 32 bits.
+/** Function to get a certain chunk of 32 bits (0 - 7) of a uint256
+ * @param val the uint256 to get the chunk from
+ * @param index which chunk to get
+ * @return the uint32 value at that chunk
+ */
 uint32_t uint256_get_bits(UInt256 val, unsigned index) {
   uint32_t bits;
   bits = val.data[index];
   return bits;
 }
 
-// Compute the sum of two UInt256 values.
+/** Function to add two uint256 numbers
+ * @param left first number to add
+ * @param right second number to add
+ * @return the sum of the two numbers
+ * 
+ */
 UInt256 uint256_add(UInt256 left, UInt256 right) {
 
   // variable to return
@@ -165,7 +189,11 @@ UInt256 uint256_add(UInt256 left, UInt256 right) {
   return sum;
 }
 
-// Compute the difference of two UInt256 values.
+/** Function to handle subtraction of two uint256 numbers
+ * @param left the number to be subtracted from
+ * @param right the number that is negated
+ * @return the difference of left and right
+ */
 UInt256 uint256_sub(UInt256 left, UInt256 right) {
   // variable to return
   UInt256 result;
@@ -177,7 +205,10 @@ UInt256 uint256_sub(UInt256 left, UInt256 right) {
   return result;
 }
 
-// Return the two's-complement negation of the given UInt256 value.
+/** Function to handle negation of a uint256 number
+ * @param val the uint256 to negate
+ * @return the negated number
+ */
 UInt256 uint256_negate(UInt256 val) {
   
   // the return variable
@@ -199,9 +230,11 @@ UInt256 uint256_negate(UInt256 val) {
 }
 
 
-// Return the result of rotating every bit in val nbits to
-// the left.  Any bits shifted past the most significant bit
-// should be shifted back into the least significant bits.
+/** Function to handle the shifting left operator for uint256
+ * @param val the number to shift
+ * @param nbits the number of bits to shift by
+ * @return the resulting number after the shift
+ */
 UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
 
   // result to return
@@ -238,9 +271,13 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
   return result;
 }
 
-// Return the result of rotating every bit in val nbits to
-// the right. Any bits shifted past the least significant bit
-// should be shifted back into the most significant bits.
+
+/** Function to handle the shifting right operator for uint256
+ * @param val the number to shift
+ * @param nbits the number of bits to shift by
+ * @return the resulting number after the shift
+ */
+
 UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
   // result to return
   UInt256 result;
