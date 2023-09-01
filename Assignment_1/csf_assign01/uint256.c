@@ -203,8 +203,38 @@ UInt256 uint256_negate(UInt256 val) {
 // the left.  Any bits shifted past the most significant bit
 // should be shifted back into the least significant bits.
 UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
+
+  // result to return
   UInt256 result;
-  // TODO: implement
+  
+  // modulate the bits to move
+  nbits %= 256;
+
+  // the amount of big bits (the members of the array val.data) to shift
+  int shift_big_bits = nbits / 32;
+
+  // for each index
+  for (unsigned i = 0; i < 8; i++) {
+    // shift the index by the number of big bits to shift (and modulate so it can wrap around from 0 => 7)
+    result.data[(i - shift_big_bits) % 8] = val.data[i];
+  }
+  
+  // the amount of bits to shift (in each member of val.data)
+  int shift_small_bits = nbits % 32;
+
+  // for each number
+  for (int j = 7; j >= 0; j--) {
+    // get the bit(s) that are to be moved to the next member of val.data
+    int sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
+
+    // get the index of the previous member
+    int ind = (j + 1) % 8; 
+
+    // shift the previous member and add the bits to be shifted into it
+    result.data[ind] = (val.data[ind] << shift_small_bits) + sig_bit;
+  }
+  
+  // return the result
   return result;
 }
 
@@ -212,7 +242,34 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
 // the right. Any bits shifted past the least significant bit
 // should be shifted back into the most significant bits.
 UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
+  // result to return
   UInt256 result;
-  // TODO: implement
+  
+  // modulate the bits to move
+  nbits %= 256;
+
+  // the amount of big bits (the members of the array val.data) to shift
+  int shift_big_bits = nbits / 32;
+
+  // for each index
+  for (unsigned i = 0; i < 8; i++) {
+    // shift the index by the number of big bits to shift (and modulate so it can wrap around from 7 => 0)
+    result.data[(i + shift_big_bits) % 8] = val.data[i];
+  }
+
+  // the amount of bits to shift (in each member of val.data)
+  int shift_small_bits = nbits % 32;
+
+  // for each number
+  for (unsigned j = 0; j < 8; j++) {
+    // get the bit(s) that are to be moved to the next member of val.data
+    int sig_bit = val.data[j] & ~(~0U << shift_small_bits);
+
+    // get the index of the previous member
+    int ind = (j - 1) % 8; 
+
+    // shift the previous member and add the bits to be shifted into it
+    result.data[ind] = (val.data[ind] >> shift_small_bits) + (sig_bit << (32 - shift_small_bits));
+  }
   return result;
 }

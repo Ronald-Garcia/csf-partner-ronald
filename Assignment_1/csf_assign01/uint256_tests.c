@@ -144,6 +144,7 @@ void test_create(TestObjs *objs) {
   (void) objs;
 
   uint32_t data1[8] = { 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U };
+  
   UInt256 val1 = uint256_create(data1);
   ASSERT(1U == val1.data[0]);
   ASSERT(2U == val1.data[1]);
@@ -169,7 +170,6 @@ void test_create_from_hex(TestObjs *objs) {
   uint32_t dat[8] = {1550609426,3334916699,42421,0,0,0,0,0};
   UInt256 test_two_half = uint256_create(dat);
   ASSERT_SAME(test_two_half, two_and_a_half_bits);
-
 }
 
 void test_format_as_hex(TestObjs *objs) {
@@ -205,6 +205,12 @@ void test_add(TestObjs *objs) {
 
   result = uint256_add(objs->max, objs->one);
   ASSERT_SAME(objs->zero, result);
+
+  UInt256 left = uint256_create_from_hex("6e1dfbdee110264803aceda8f2d2b43177c72f6e20e9e6cd32a54027633b932");
+  UInt256 right = uint256_create_from_hex("ae1ce1fdd45187f7c206a17d74106e06d9e43a67999dc6c70d215aa79eef9e2");
+  UInt256 expected = uint256_create_from_hex("11c3adddcb561ae3fc5b38f2666e3223851ab69d5ba87ad943fc69acf022b314");
+
+  ASSERT_SAME(expected, uint256_add(left, right));
 }
 
 void test_sub(TestObjs *objs) {
@@ -218,6 +224,12 @@ void test_sub(TestObjs *objs) {
 
   result = uint256_sub(objs->zero, objs->one);
   ASSERT_SAME(objs->max, result);
+
+  UInt256 left = uint256_create_from_hex("733cf23e74b0c561ec370300b95b873cf6cb7574f3e029249e999bfaeda3790");
+  UInt256 right = uint256_create_from_hex("1247d82a3cac5b8762c9d265ecc22f3354e50c7930e8bd4605d61277a01496e");
+  UInt256 expected = uint256_create_from_hex("60f51a14380469da896d309acc995809a1e668fbc2f76bde98c389834d8ee22");
+  ASSERT_SAME(expected, uint256_sub(left, right));
+
 }
 
 void test_negate(TestObjs *objs) {
@@ -253,6 +265,20 @@ void test_rotate_left(TestObjs *objs) {
   ASSERT(0U == result.data[5]);
   ASSERT(0U == result.data[6]);
   ASSERT(0xD0000000U == result.data[7]);
+
+  UInt256 pillar;
+  uint32_t pillar_data[8] = { 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U };
+  pillar = uint256_create(pillar_data);
+  
+  result = uint256_rotate_left(pillar, 1);
+  ASSERT(0x00000003U == result.data[0]);
+  ASSERT(0x00000003U == result.data[1]);
+  ASSERT(0x00000003U == result.data[2]);
+  ASSERT(0x00000003U == result.data[3]);
+  ASSERT(0x00000003U == result.data[4]);
+  ASSERT(0x00000003U == result.data[5]);
+  ASSERT(0x00000003U == result.data[6]);
+  ASSERT(0x00000003U == result.data[7]);
 }
 
 void test_rotate_right(TestObjs *objs) {
@@ -274,4 +300,18 @@ void test_rotate_right(TestObjs *objs) {
   ASSERT(0U == result.data[5]);
   ASSERT(0U == result.data[6]);
   ASSERT(0xBCD00000U == result.data[7]);
+
+  UInt256 pillar;
+  uint32_t pillar_data[8] = { 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U, 0x80000001U };
+  pillar = uint256_create(pillar_data);
+
+  result = uint256_rotate_right(pillar, 1);
+  ASSERT(0xC0000000U == result.data[0]);
+  ASSERT(0xC0000000U == result.data[1]);
+  ASSERT(0xC0000000U == result.data[2]);
+  ASSERT(0xC0000000U == result.data[3]);
+  ASSERT(0xC0000000U == result.data[4]);
+  ASSERT(0xC0000000U == result.data[5]);
+  ASSERT(0xC0000000U == result.data[6]);
+  ASSERT(0xC0000000U == result.data[7]);
 }
