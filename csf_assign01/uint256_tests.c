@@ -197,6 +197,7 @@ void test_format_as_hex(TestObjs *objs) {
   ASSERT(0 == strcmp("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", s));
   free(s);
 
+  //Test for leading 0 problem.
   UInt256 pap = uint256_create_from_hex("6e1dfbd00000264803aceda8f2d2b43177c72f6e20e9e6cd32a54027633b932");
   s = uint256_format_as_hex(pap);
   ASSERT(0 == strcmp("6e1dfbd00000264803aceda8f2d2b43177c72f6e20e9e6cd32a54027633b932", s));
@@ -294,6 +295,42 @@ void test_rotate_left(TestObjs *objs) {
   ASSERT(0x00000003U == result.data[5]);
   ASSERT(0x00000003U == result.data[6]);
   ASSERT(0x00000003U == result.data[7]);
+
+  //More rotate tests.
+  //First test: Rotating by more than 32 bits. Identical numbers.
+  
+  result = uint256_rotate_left(pillar, 33);
+  ASSERT(0x00000003U == result.data[0]);
+  ASSERT(0x00000003U == result.data[1]);
+  ASSERT(0x00000003U == result.data[2]);
+  ASSERT(0x00000003U == result.data[3]);
+  ASSERT(0x00000003U == result.data[4]);
+  ASSERT(0x00000003U == result.data[5]);
+  ASSERT(0x00000003U == result.data[6]);
+  ASSERT(0x00000003U == result.data[7]);
+
+  //First test: Rotating by more than 256 bits. Identical numbers.
+  
+  result = uint256_rotate_left(pillar, 257);
+  ASSERT(0x00000003U == result.data[0]);
+  ASSERT(0x00000003U == result.data[1]);
+  ASSERT(0x00000003U == result.data[2]);
+  ASSERT(0x00000003U == result.data[3]);
+  ASSERT(0x00000003U == result.data[4]);
+  ASSERT(0x00000003U == result.data[5]);
+  ASSERT(0x00000003U == result.data[6]);
+  ASSERT(0x00000003U == result.data[7]);
+
+  //rotating by 0. Identical numbers
+  result = uint256_rotate_left(pillar, 0);
+  ASSERT(0x80000001U == result.data[0]);
+  ASSERT(0x80000001U == result.data[1]);
+  ASSERT(0x80000001U == result.data[2]);
+  ASSERT(0x80000001U == result.data[3]);
+  ASSERT(0x80000001U == result.data[4]);
+  ASSERT(0x80000001U == result.data[5]);
+  ASSERT(0x80000001U == result.data[6]);
+  ASSERT(0x80000001U == result.data[7]);
 }
 
 void test_rotate_right(TestObjs *objs) {
@@ -329,4 +366,40 @@ void test_rotate_right(TestObjs *objs) {
   ASSERT(0xC0000000U == result.data[5]);
   ASSERT(0xC0000000U == result.data[6]);
   ASSERT(0xC0000000U == result.data[7]);
+
+  //More rotate tests.
+  //First test: Rotating by more than 32 bits. Identical numbers.
+  
+  result = uint256_rotate_right(pillar, 33);
+  ASSERT(0xC0000000U == result.data[0]);
+  ASSERT(0xC0000000U == result.data[1]);
+  ASSERT(0xC0000000U == result.data[2]);
+  ASSERT(0xC0000000U == result.data[3]);
+  ASSERT(0xC0000000U == result.data[4]);
+  ASSERT(0xC0000000U == result.data[5]);
+  ASSERT(0xC0000000U == result.data[6]);
+  ASSERT(0xC0000000U == result.data[7]);
+
+  //First test: Rotating by more than 256 bits. Identical numbers.
+  
+  result = uint256_rotate_right(pillar, 257);
+  ASSERT(0xC0000000U == result.data[0]);
+  ASSERT(0xC0000000U == result.data[1]);
+  ASSERT(0xC0000000U == result.data[2]);
+  ASSERT(0xC0000000U == result.data[3]);
+  ASSERT(0xC0000000U == result.data[4]);
+  ASSERT(0xC0000000U == result.data[5]);
+  ASSERT(0xC0000000U == result.data[6]);
+  ASSERT(0xC0000000U == result.data[7]);
+
+  //rotating by 0. Identical numbers
+  result = uint256_rotate_right(pillar, 0);
+  ASSERT(0x80000001U == result.data[0]);
+  ASSERT(0x80000001U == result.data[1]);
+  ASSERT(0x80000001U == result.data[2]);
+  ASSERT(0x80000001U == result.data[3]);
+  ASSERT(0x80000001U == result.data[4]);
+  ASSERT(0x80000001U == result.data[5]);
+  ASSERT(0x80000001U == result.data[6]);
+  ASSERT(0x80000001U == result.data[7]);
 }

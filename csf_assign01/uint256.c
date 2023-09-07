@@ -267,12 +267,19 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
   
   // the amount of bits to shift (in each member of val.data)
   int shift_small_bits = nbits % 32;
-
+  
+  uint32_t sig_bit = 0;
   // for each number
   for (int j = 7; j >= 0; j--) {
     // get the bit(s) that are to be moved to the next member of val.data
-    uint32_t sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
-
+    // Need to make sure we are not shifting by 32, (undefined behavior), 
+    //so special case first.
+    if (shift_small_bits == 0) {
+      break; //If it's zero, you don't need to do a shift anyway, so go to the next
+    }
+    else { //This is the normal case
+      sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
+    }
     // get the index of the previous member
     int ind = (j + 1) % 8; 
 
@@ -310,10 +317,19 @@ UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
   // the amount of bits to shift (in each member of val.data)
   int shift_small_bits = nbits % 32;
 
+  uint32_t sig_bit = 0;
+
   // for each number
   for (unsigned j = 0; j < 8; j++) {
     // get the bit(s) that are to be moved to the next member of val.data
-    uint32_t sig_bit = val.data[j] & ~(~0U << shift_small_bits);
+    // Need special case where shift_small_bits == 0 to avoid undefined behavior
+    // (shifting a 32 bit number 32 bits)
+    if (shift_small_bits == 0) {
+      break; //If it's zero, you don't have to do a shift anyway.
+    }
+    else {
+      sig_bit = val.data[j] & ~(~0U << shift_small_bits);
+    }
 
     // get the index of the previous member
     int ind = (j - 1) % 8; 
