@@ -196,6 +196,11 @@ void test_format_as_hex(TestObjs *objs) {
   s = uint256_format_as_hex(objs->max);
   ASSERT(0 == strcmp("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", s));
   free(s);
+
+  UInt256 pap = uint256_create_from_hex("6e1dfbd00000264803aceda8f2d2b43177c72f6e20e9e6cd32a54027633b932");
+  s = uint256_format_as_hex(pap);
+  ASSERT(0 == strcmp("6e1dfbd00000264803aceda8f2d2b43177c72f6e20e9e6cd32a54027633b932", s));
+  free(s);
 }
 
 void test_add(TestObjs *objs) {

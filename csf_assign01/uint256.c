@@ -118,19 +118,27 @@ char *uint256_format_as_hex(UInt256 val) {
   //Malloc a sufficiently large buffer array to store 64 letters plus null terminator.
   char *hex = calloc(65, sizeof(char));
   int size_of_hex = 0;
-
+  int first_ind = 7;
   //Assumes each index can be represented in at most 8 letters.
   char buffer [9];
 
   //Loop through each element in val, adding to buffer, from most to least significant.
   for (int i = 7; i > 0; i--) {
     //Check to not write extra zeros in.
-    if (val.data[i] != 0){
+    if (val.data[i] == 0U) {
+      first_ind = i;
+      continue;
+    }
+
+    if (i == first_ind) {
       sprintf(buffer, "%x", val.data[i]);
-      for (int j = 0; j < 8; j++) {
-        hex[size_of_hex] = buffer[j];
-        size_of_hex++;
-      }
+    } else {
+      sprintf(buffer, "%0x", val.data[i]);
+    }
+
+    for (int j = 0; (j < 8) && (buffer[j] != '\0'); j++) {
+      hex[size_of_hex] = buffer[j];
+      size_of_hex++;
     }
   }
   //At the end, need to write whatever is left to buffer, no matter what.
@@ -258,7 +266,7 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
   // for each number
   for (int j = 7; j >= 0; j--) {
     // get the bit(s) that are to be moved to the next member of val.data
-    int sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
+    uint32_t sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
 
     // get the index of the previous member
     int ind = (j + 1) % 8; 
@@ -300,7 +308,7 @@ UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
   // for each number
   for (unsigned j = 0; j < 8; j++) {
     // get the bit(s) that are to be moved to the next member of val.data
-    int sig_bit = val.data[j] & ~(~0U << shift_small_bits);
+    uint32_t sig_bit = val.data[j] & ~(~0U << shift_small_bits);
 
     // get the index of the previous member
     int ind = (j - 1) % 8; 
