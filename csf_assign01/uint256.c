@@ -262,13 +262,15 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
   // for each index
   for (unsigned i = 0; i < 8; i++) {
     // shift the index by the number of big bits to shift (and modulate so it can wrap around from 0 => 7)
-    result.data[(i - shift_big_bits) % 8] = val.data[i];
+    result.data[(i + shift_big_bits) % 8] = val.data[i];
   }
   
   // the amount of bits to shift (in each member of val.data)
   int shift_small_bits = nbits % 32;
   
+  //The data being carried from one index to another
   uint32_t sig_bit = 0;
+
   // for each number
   for (int j = 7; j >= 0; j--) {
     // get the bit(s) that are to be moved to the next member of val.data
@@ -280,11 +282,12 @@ UInt256 uint256_rotate_left(UInt256 val, unsigned nbits) {
     else { //This is the normal case
       sig_bit = ((val.data[j])) >> (32 - shift_small_bits);
     }
-    // get the index of the previous member
-    int ind = (j + 1) % 8; 
+    // get the index of uint32 num that needs a small shift.
+    int ind = (j + 1 + shift_big_bits) % 8; 
 
-    // shift the previous member and add the bits to be shifted into it
-    result.data[ind] = (val.data[ind] << shift_small_bits) + sig_bit;
+    // shift the index number and add the bits to be shifted into it
+    result.data[ind] = (result.data[ind] << shift_small_bits);
+    result.data[ind] += sig_bit; //Can't be done in above statement, undefined behavior?
   }
   
   // return the result
@@ -311,12 +314,13 @@ UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
   // for each index
   for (unsigned i = 0; i < 8; i++) {
     // shift the index by the number of big bits to shift (and modulate so it can wrap around from 7 => 0)
-    result.data[(i + shift_big_bits) % 8] = val.data[i];
+    result.data[(i - shift_big_bits) % 8] = val.data[i];
   }
 
   // the amount of bits to shift (in each member of val.data)
   int shift_small_bits = nbits % 32;
 
+  //The data being carried from one index to another
   uint32_t sig_bit = 0;
 
   // for each number
@@ -331,11 +335,11 @@ UInt256 uint256_rotate_right(UInt256 val, unsigned nbits) {
       sig_bit = val.data[j] & ~(~0U << shift_small_bits);
     }
 
-    // get the index of the previous member
-    int ind = (j - 1) % 8; 
+    // get the index of uint32 num that needs a small shift.
+    int ind = (j - 1 - shift_big_bits) % 8; 
 
     // shift the previous member and add the bits to be shifted into it
-    result.data[ind] = (val.data[ind] >> shift_small_bits) + (sig_bit << (32 - shift_small_bits));
+    result.data[ind] = (result.data[ind] >> shift_small_bits) + (sig_bit << (32 - shift_small_bits));
   }
   return result;
 }

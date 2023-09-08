@@ -309,7 +309,7 @@ void test_rotate_left(TestObjs *objs) {
   ASSERT(0x00000003U == result.data[6]);
   ASSERT(0x00000003U == result.data[7]);
 
-  //First test: Rotating by more than 256 bits. Identical numbers.
+  //Rotating by more than 256 bits. Identical numbers.
   
   result = uint256_rotate_left(pillar, 257);
   ASSERT(0x00000003U == result.data[0]);
@@ -331,6 +331,29 @@ void test_rotate_left(TestObjs *objs) {
   ASSERT(0x80000001U == result.data[5]);
   ASSERT(0x80000001U == result.data[6]);
   ASSERT(0x80000001U == result.data[7]);
+
+  //Rotate random number by 4 left overall.
+  UInt256 testing_num = uint256_create_from_hex("8733cf23e74b0c561ec3700000000000000000000f3e029249e999bfaeda3790");
+  result = uint256_rotate_left(testing_num, 516);
+  ASSERT(0xeda37908U == result.data[0]);
+  ASSERT(0x9e999bfaU == result.data[1]);
+  ASSERT(0xf3e02924U == result.data[2]);
+  ASSERT(0x00000000U == result.data[3]);
+  ASSERT(0x00000000U == result.data[4]);
+  ASSERT(0xec370000U == result.data[5]);
+  ASSERT(0x74b0c561U == result.data[6]);
+  ASSERT(0x733cf23eU == result.data[7]);
+
+  //Rotate same random number by 36 left overall.
+  result = uint256_rotate_left(testing_num, 36);
+  ASSERT(0x733cf23eU == result.data[0]);
+  ASSERT(0xeda37908U == result.data[1]);
+  ASSERT(0x9e999bfaU == result.data[2]);
+  ASSERT(0xf3e02924U == result.data[3]);
+  ASSERT(0x00000000U == result.data[4]);
+  ASSERT(0x00000000U == result.data[5]);
+  ASSERT(0xec370000U == result.data[6]);
+  ASSERT(0x74b0c561U == result.data[7]);
 }
 
 void test_rotate_right(TestObjs *objs) {
@@ -402,4 +425,27 @@ void test_rotate_right(TestObjs *objs) {
   ASSERT(0x80000001U == result.data[5]);
   ASSERT(0x80000001U == result.data[6]);
   ASSERT(0x80000001U == result.data[7]);
+
+  //Rotate random number by 4 left overall.
+  UInt256 testing_num = uint256_create_from_hex("8733cf23e74b0c561ec3700000000000000000000f3e029249e999bfaeda3790");
+  result = uint256_rotate_right(testing_num, 516);
+  ASSERT(0xfaeda379U == result.data[0]);
+  ASSERT(0x249e999bU == result.data[1]);
+  ASSERT(0x00f3e029U == result.data[2]);
+  ASSERT(0x00000000U == result.data[3]);
+  ASSERT(0x00000000U == result.data[4]);
+  ASSERT(0x61ec3700U == result.data[5]);
+  ASSERT(0x3e74b0c5U == result.data[6]);
+  ASSERT(0x08733cf2U == result.data[7]);
+
+  //Rotate same random number by 36 left overall.
+  result = uint256_rotate_right(testing_num, 36);
+  ASSERT(0x249e999bU == result.data[0]);
+  ASSERT(0x00f3e029U == result.data[1]);
+  ASSERT(0x00000000U == result.data[2]);
+  ASSERT(0x00000000U == result.data[3]);
+  ASSERT(0x61ec3700U == result.data[4]);
+  ASSERT(0x3e74b0c5U == result.data[5]);
+  ASSERT(0x08733cf2U == result.data[6]);
+  ASSERT(0xfaeda379U == result.data[7]);
 }
