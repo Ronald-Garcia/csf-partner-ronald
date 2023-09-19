@@ -21,7 +21,15 @@
 // Note that the character values should be treated as
 // being unsigned (in the range 0..255)
 uint32_t wc_hash(const unsigned char *w) {
-  // TODO: implement
+  
+  uint32_t hash_code = 5381;
+
+  for (int i = 0; w[i] != '\0'; i++) {
+    hash_code = hash_code * 33 + w[i];
+  }
+
+  return hash_code;
+
 }
 
 // Compare two strings lexicographically. Return
@@ -35,7 +43,23 @@ uint32_t wc_hash(const unsigned char *w) {
 // of the other, it is considered as "less than". E.g.,
 // "hi" would compare as less than "high".
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
-  // TODO: implement
+
+  int res = 0;
+
+  for (int i = 0; lhs[i] != '\0' && rhs[i] != '\0'; i++) {
+
+    if (lhs[i + 1] == '\0' && rhs[i + 1] != '\0') return -1;
+    if (lhs[i + 1] != '\0' && rhs[i + 1] == '\0') return 1;
+    
+    if (lhs[i] == rhs[i]) continue;
+
+    if (lhs[i] < rhs[i]) return -1;
+    else return 1;
+  }
+
+
+
+  return res;
 }
 
 // Copy NUL-terminated source string to the destination buffer.
