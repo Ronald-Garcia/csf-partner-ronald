@@ -64,7 +64,12 @@ int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
 // Copy NUL-terminated source string to the destination buffer.
 void wc_str_copy(unsigned char *dest, const unsigned char *source) {
-  // TODO: implement
+  int i;
+  for (i = 0; source[i] != '\0'; i++) {
+    dest[i] = source[i];
+  }
+
+  dest[i] = source[i];
 }
 
 // Return 1 if the character code in c is a whitespace character,
@@ -112,8 +117,8 @@ int wc_readnext(FILE *in, unsigned char *w) {
 // pointed-to by w so that every letter is lower-case.
 void wc_tolower(unsigned char *w) {
   for (int i = 0; w[i] != '\0'; i++) {
-    if (wc_isalpha(w[i]) && w[i] >= 97) {
-      w[i] -= (97 - 65);
+    if (wc_isalpha(w[i]) && w[i] < 97) {
+      w[i] += (97 - 65);
     }
   }
 }
@@ -121,7 +126,16 @@ void wc_tolower(unsigned char *w) {
 // Remove any non-alphaabetic characters from the end of the
 // NUL-terminated character string pointed-to by w.
 void wc_trim_non_alpha(unsigned char *w) {
-  // TODO: implement
+  
+  int end_index = 0;
+
+  for (end_index = 0; w[end_index] != '\0'; end_index++);
+
+  int new_end_index;
+
+  for (new_end_index = end_index - 1; !wc_isalpha(w[new_end_index]); new_end_index--);
+
+  w[new_end_index + 1] = '\0';
 }
 
 // Search the specified linked list of WordEntry objects for an object
