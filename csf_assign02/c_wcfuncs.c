@@ -45,21 +45,28 @@ uint32_t wc_hash(const unsigned char *w) {
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
   int res = 0;
-
+  if (lhs[0] == '0' && rhs[0] == '0') { //If both are just null terminator.
+    return 0;
+  }
+  if (lhs[0] == 0) {//If only lhs is null terminator
+    return -1;
+  }
+  if (rhs[0] == 0) {//If only rhs is null terminator
+    return 1;
+  }
   for (int i = 0; lhs[i] != '\0' && rhs[i] != '\0'; i++) {
 
     if (lhs[i + 1] == '\0' && rhs[i + 1] != '\0') return -1;
     if (lhs[i + 1] != '\0' && rhs[i + 1] == '\0') return 1;
     
-    if (lhs[i] == rhs[i]) continue;
-
-    if (lhs[i] < rhs[i]) return -1;
-    else return 1;
+    if (lhs[i] < rhs[i]) return -1; // If not same character return.
+    else if (lhs[i] > rhs[i]) return 1;
+    //Otherwise, go through loop again.
   }
 
 
 
-  return res;
+  return res; //Only happens if both are the same word.
 }
 
 // Copy NUL-terminated source string to the destination buffer.
@@ -95,7 +102,7 @@ int wc_isspace(unsigned char c) {
 // Return 1 if the character code in c is an alphabetic character
 // ('A' through 'Z' or 'a' through 'z'), 0 otherwise.
 int wc_isalpha(unsigned char c) {
-  return (c >= 65 && c <= (65+26)) || (c >= 97 && c <= (97 + 26));
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
 }
 
 // Read the next word from given input stream, storing
@@ -110,7 +117,28 @@ int wc_isalpha(unsigned char c) {
 // MAX_WORDLEN characters, then only the first MAX_WORDLEN
 // characters in the sequence should be stored in the array.
 int wc_readnext(FILE *in, unsigned char *w) {
-  // TODO: implement
+
+  int i = 0;
+  while (i < MAX_WORDLEN) {
+    char cur_char = fgetc(in);
+
+    if (cur_char == EOF && i == 0) { // if end of file or error, complete current word and return 0
+      return 0;
+    }
+
+    if (wc_isspace(cur_char) || cur_char == EOF) { // if a whitespace character is reached, stop reading.
+      break;
+    }
+
+    w[i] = cur_char; // otherwise, append character to the word and keep reading
+    i++;
+  }
+
+  // null terminate word
+  w[i] = '\0';
+
+  return 1; // if here, word was successfully read.
+
 }
 
 // Convert the NUL-terminated character string in the array
@@ -118,7 +146,7 @@ int wc_readnext(FILE *in, unsigned char *w) {
 void wc_tolower(unsigned char *w) {
   for (int i = 0; w[i] != '\0'; i++) {
     if (wc_isalpha(w[i]) && w[i] < 97) {
-      w[i] += (97 - 65);
+      w[i] += 32;
     }
   }
 }
@@ -129,12 +157,19 @@ void wc_trim_non_alpha(unsigned char *w) {
   
   int end_index = 0;
 
-  for (end_index = 0; w[end_index] != '\0'; end_index++);
+  // goes until end_index is at the null terminator.
+  while(w[end_index] != '\0') { 
+    end_index++;
+  }
 
-  int new_end_index;
+  int new_end_index = end_index - 1; //character before null terminator
 
-  for (new_end_index = end_index - 1; !wc_isalpha(w[new_end_index]); new_end_index--);
+  // starting at the index of the character before the null terminator, go back until there is an alphabetic character
+  while(!wc_isalpha(w[new_end_index])) {
+    new_end_index--;
+  }
 
+  // set the end after the alphabetic character
   w[new_end_index + 1] = '\0';
 }
 
@@ -151,7 +186,27 @@ void wc_trim_non_alpha(unsigned char *w) {
 // the new node should have its count value set to 0. (It is the caller's
 // job to update the count.)
 struct WordEntry *wc_find_or_insert(struct WordEntry *head, const unsigned char *s, int *inserted) {
-  // TODO: implement
+  struct WordEntry* cur = head;
+
+  while (cur != NULL) {
+    // if the words match, set inserted to 0 and return the pointer of the matching node
+    if (wc_str_compare(s, cur->word) == 0) {
+      *inserted = 0;
+      return cur;
+    }
+
+    cur = cur->next;
+  }
+
+  // otherwise, prepend the list
+  struct WordEntry *new_head = (struct WordEntry*) malloc(sizeof(struct WordEntry));
+
+  *inserted = 1; // set inserted to 1
+  new_head->next = head; // prepend list
+  new_head->count = 0; // set count to 0
+  wc_str_copy(new_head->word, s);
+
+  return new_head; // return new head
 }
 
 // Find or insert the WordEntry object for the given string (s), returning
@@ -162,10 +217,30 @@ struct WordEntry *wc_find_or_insert(struct WordEntry *head, const unsigned char 
 // Returns a pointer to the WordEntry object in the appropriate linked list
 // which represents s.
 struct WordEntry *wc_dict_find_or_insert(struct WordEntry *buckets[], unsigned num_buckets, const unsigned char *s) {
-  // TODO: implement
+
+  uint32_t s_hash = wc_hash(s) % num_buckets;
+
+  int inserted_node = 0;
+
+  struct WordEntry* new_node = wc_find_or_insert(buckets[s_hash], s, &inserted_node);
+
+  if (inserted_node) {
+    buckets[s_hash] = new_node;
+  }
+
+  return buckets[s_hash];
 }
 
 // Free all of the nodes in given linked list of WordEntry objects.
 void wc_free_chain(struct WordEntry *p) {
-  // TODO: implement
+
+  struct WordEntry* cur = p;
+  
+  while (cur != NULL) {
+    cur = cur->next;
+    free(p);
+    p = cur;
+  } 
+
+
 }

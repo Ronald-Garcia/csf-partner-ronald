@@ -239,6 +239,8 @@ void test_find_or_insert(TestObjs *objs) {
   ASSERT(0 == strcmp("ax's", (const char *) p->word));
   ASSERT(1 == p->count);
   ++p->count;
+  
+  wc_free_chain(p);
 }
 
 void test_dict_find_or_insert(TestObjs *objs) {
@@ -309,6 +311,10 @@ void test_dict_find_or_insert(TestObjs *objs) {
   ASSERT(dict[4] == NULL);
   ASSERT(p->count == 0);
   ++p->count;
+
+  for (int i = 0; i < 4; i++) {
+    wc_free_chain(dict[i]); 
+  }
 }
 
 void test_free_chain(TestObjs *objs) {
