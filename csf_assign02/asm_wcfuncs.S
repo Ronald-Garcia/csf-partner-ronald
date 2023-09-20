@@ -89,8 +89,27 @@ wc_str_copy:
  */
 	.globl wc_isspace
 wc_isspace:
-	/* TODO: implement */
+	/* if argument is equal to: */
+	cmpl %rdi, $9  /* tab */
+	je .Lisspace 
+	cmpl %rdi, $10  /* new line */
+	je .Lisspace 
+	cmpl %rdi, $11  /* vertical tab */
+	je .Lisspace 
+	cmpl %rdi, $12  /* form feed */
+	je .Lisspace 
+	cmpl %rdi, $13  /* carriage return */
+	je .Lisspace 
+	cmpl %rdi, $32  /* space */
+	je .Lisspace 
+
+	/* if its not a whitespace character, put 0 into the return register */
+	movl $0, %rax
 	ret
+.Lisspace:
+	movl $1, %rax /* put 1 into the return register */
+	ret
+	
 
 /*
  * Return 1 if the character code in c is an alphabetic character
@@ -101,8 +120,23 @@ wc_isspace:
  */
 	.globl wc_isalpha
 wc_isalpha:
-	/* TODO: implement */
+	cmpl $65, %rdi 
+	jb .Lnotalpha /* If below 'A', not a letter */
+	cmpl $90, %rdi 
+	jbe .Lalpha /* If below or equal to 'Z' (and above 'A'), then is a letter */
+	cmpl $97, %rdi
+	jb .Lnotalpha /* If below 'a' and not in 'A' - 'Z', not a letter */
+	cmpl $122, %rdi
+	jbe .Lalpha /* If above or equal to 'a' and below or equal to 'z', is a letter */
+	jmp .Lnotalpha /* If above 122, not a letter */
+
+.Lnotalpha:
+	movl $0, %rax /* Put 0 in return register */
 	ret
+.Lalpha:
+	movl $1, %rax /* Put 1 in return register */
+	ret
+
 
 /*
  * Read the next word from given input stream, storing
