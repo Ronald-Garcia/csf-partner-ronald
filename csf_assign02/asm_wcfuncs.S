@@ -37,7 +37,7 @@
  */
 	.globl wc_hash
 wc_hash:
-	/* TODO: implement */
+	
 	ret
 
 /*

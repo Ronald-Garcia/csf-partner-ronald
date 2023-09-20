@@ -45,13 +45,13 @@ uint32_t wc_hash(const unsigned char *w) {
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
   int res = 0;
-  if (lhs[0] == '0' && rhs[0] == '0') { //If both are just null terminator.
+  if (lhs[0] == '\0' && rhs[0] == '\0') { //If both are just null terminator.
     return 0;
   }
-  if (lhs[0] == 0) {//If only lhs is null terminator
+  if (lhs[0] == '\0') {//If only lhs is null terminator
     return -1;
   }
-  if (rhs[0] == 0) {//If only rhs is null terminator
+  if (rhs[0] == '\0') {//If only rhs is null terminator
     return 1;
   }
   for (int i = 0; lhs[i] != '\0' && rhs[i] != '\0'; i++) {
