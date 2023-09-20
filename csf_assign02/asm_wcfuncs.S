@@ -90,24 +90,24 @@ wc_str_copy:
 	.globl wc_isspace
 wc_isspace:
 	/* if argument is equal to: */
-	cmpl %rdi, $9  /* tab */
+	cmpq $9, %rdi  /* tab */
 	je .Lisspace 
-	cmpl %rdi, $10  /* new line */
+	cmpq $10, %rdi  /* new line */
 	je .Lisspace 
-	cmpl %rdi, $11  /* vertical tab */
+	cmpq $11, %rdi  /* vertical tab */
 	je .Lisspace 
-	cmpl %rdi, $12  /* form feed */
+	cmpq $12, %rdi  /* form feed */
 	je .Lisspace 
-	cmpl %rdi, $13  /* carriage return */
+	cmpq $13, %rdi  /* carriage return */
 	je .Lisspace 
-	cmpl %rdi, $32  /* space */
+	cmpq $32, %rdi  /* space */
 	je .Lisspace 
 
 	/* if its not a whitespace character, put 0 into the return register */
-	movl $0, %rax
+	movq $0, %rax
 	ret
 .Lisspace:
-	movl $1, %rax /* put 1 into the return register */
+	movq $1, %rax /* put 1 into the return register */
 	ret
 	
 
@@ -120,21 +120,21 @@ wc_isspace:
  */
 	.globl wc_isalpha
 wc_isalpha:
-	cmpl $65, %rdi 
+	cmpq $65, %rdi 
 	jb .Lnotalpha /* If below 'A', not a letter */
-	cmpl $90, %rdi 
+	cmpq $90, %rdi 
 	jbe .Lalpha /* If below or equal to 'Z' (and above 'A'), then is a letter */
-	cmpl $97, %rdi
+	cmpq $97, %rdi
 	jb .Lnotalpha /* If below 'a' and not in 'A' - 'Z', not a letter */
-	cmpl $122, %rdi
+	cmpq $122, %rdi
 	jbe .Lalpha /* If above or equal to 'a' and below or equal to 'z', is a letter */
 	jmp .Lnotalpha /* If above 122, not a letter */
 
 .Lnotalpha:
-	movl $0, %rax /* Put 0 in return register */
+	movq $0, %rax /* Put 0 in return register */
 	ret
 .Lalpha:
-	movl $1, %rax /* Put 1 in return register */
+	movq $1, %rax /* Put 1 in return register */
 	ret
 
 
