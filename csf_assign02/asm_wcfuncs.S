@@ -57,8 +57,54 @@ wc_hash:
  */
 	.globl wc_str_compare
 wc_str_compare:
+	/* Notes on registers used:
+	* Caller saved registers: %r10 %r11
+	* Subroutine arguments: %rdi, %rsi
+	* Return register: %rax
+	*
+	* TODO: WRITE REGISTER USES
+	*/
+	/*Align the stack pointer.*/
+	subq $8, %rsp
 	
+	.Lstr_compare_loop:
+	/*Store first letter of left into r10*/
+	movq (%rdi), %r10
+	/*Store first letter of right into r11*/
+	movq (%rsi), %r11
 
+	/*Check if the two characters are the same*/
+	cmpq %r11, %r10
+	/*If left is less, jump to left less state.*/
+	jb .Lstr_compare_left_less
+	/*If right is less, jump to right less state.*/
+	ja .Lstr_compare_left_more
+	/*Otherwise, they are equal, and we can now see if string is over by comparison with null*/
+	cmpq $0, %r10
+	je .Lstr_compare_left_same
+	/*Otherwise, increment pointers and restart loop.*/
+	incq %rdi
+	incq %rsi
+	jmp .Lstr_compare_loop
+
+	.Lstr_compare_left_less:
+	/*If the left is less than right, return -1.*/
+	movq $-1, %rax
+	jmp .Lstr_compare_done
+
+	.Lstr_compare_left_more:
+	/*If the left is more than right, return 1.*/
+	movq $1, %rax
+	jmp .Lstr_compare_done
+
+	.Lstr_compare_left_same:
+	/*If the left is equal to right, return 0.*/
+	movq $0, %rax
+	jmp .Lstr_compare_done
+
+	.Lstr_compare_done:
+	/*Realign stack pointer and return*/
+	addq $8, %rsp
 	ret
 
 /*
@@ -90,6 +136,9 @@ wc_str_copy:
  */
 	.globl wc_isspace
 wc_isspace:
+	/*Align the stack pointer.*/
+	subq $8, %rsp
+
 	/* if argument is equal to: */
 	cmpq $9, %rdi  /* tab */
 	je .Lisspace 
@@ -106,11 +155,16 @@ wc_isspace:
 
 	/* if its not a whitespace character, put 0 into the return register */
 	movq $0, %rax
-	ret
+	jmp .Lisspace_done
+
 .Lisspace:
 	movq $1, %rax /* put 1 into the return register */
+	jmp .Lisspace_done
+
+.Lisspace_done:
+	/*realign stack pointer*/
+	addq $8, %rsp
 	ret
-	
 
 /*
  * Return 1 if the character code in c is an alphabetic character
@@ -121,6 +175,9 @@ wc_isspace:
  */
 	.globl wc_isalpha
 wc_isalpha:
+	/*Align the stack pointer*/
+	subq $8, %rsp
+	/*Enter comparisions*/
 	cmpq $65, %rdi 
 	jb .Lnotalpha /* If below 'A', not a letter */
 	cmpq $90, %rdi 
@@ -133,11 +190,15 @@ wc_isalpha:
 
 .Lnotalpha:
 	movq $0, %rax /* Put 0 in return register */
-	ret
+	jmp .Lisalpha_done
 .Lalpha:
 	movq $1, %rax /* Put 1 in return register */
-	ret
+	jmp .Lisalpha_done
 
+.Lisalpha_done:
+	/*realign stack pointer*/
+	addq $8, %rsp
+	ret
 
 /*
  * Read the next word from given input stream, storing
