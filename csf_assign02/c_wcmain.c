@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include "wcfuncs.h"
 
@@ -25,7 +26,7 @@ int main(int argc, char **argv) {
   }
 
 
-  struct WordEntry* buckets[HASHTABLE_SIZE] = {0};
+  struct WordEntry** buckets = malloc(sizeof(struct WordEntry*) * HASHTABLE_SIZE);
 
   // stats (to be printed at end)
   uint32_t total_words = 0;
@@ -45,7 +46,7 @@ int main(int argc, char **argv) {
     wc_tolower(buffer);
 
     wc_trim_non_alpha(buffer);
-
+    printf("Current word: %s\n", buffer);
     struct WordEntry* current_word_entry = wc_dict_find_or_insert(buckets, HASHTABLE_SIZE, buffer);
 
     if (current_word_entry->count == 0) { // if this is the first iteration of this word, add to unique_words
@@ -88,6 +89,8 @@ int main(int argc, char **argv) {
     fclose(fp);
     fp = NULL;
   }
+
+  free(buckets);
 
   return 0;
 }

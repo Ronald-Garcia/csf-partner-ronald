@@ -44,29 +44,21 @@ uint32_t wc_hash(const unsigned char *w) {
 // "hi" would compare as less than "high".
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
-  int res = 0;
-  if (lhs[0] == '\0' && rhs[0] == '\0') { //If both are just null terminator.
-    return 0;
-  }
-  if (lhs[0] == '\0') {//If only lhs is null terminator
-    return -1;
-  }
-  if (rhs[0] == '\0') {//If only rhs is null terminator
-    return 1;
-  }
-  for (int i = 0; lhs[i] != '\0' && rhs[i] != '\0'; i++) {
+  while (1) {
 
-    if (lhs[i + 1] == '\0' && rhs[i + 1] != '\0') return -1;
-    if (lhs[i + 1] != '\0' && rhs[i + 1] == '\0') return 1;
-    
-    if (lhs[i] < rhs[i]) return -1; // If not same character return.
-    else if (lhs[i] > rhs[i]) return 1;
+    if (*lhs < *rhs) { 
+      return -1; // If not same character return.
+    } else if (*lhs > *rhs) {
+      return 1;
+    } else if (*lhs == *rhs && *lhs == '\0') {
+      return 0;
+    }
+    lhs++;
+    rhs++;
     //Otherwise, go through loop again.
   }
 
-
-
-  return res; //Only happens if both are the same word.
+  return 0;
 }
 
 // Copy NUL-terminated source string to the destination buffer.
@@ -119,6 +111,8 @@ int wc_isalpha(unsigned char c) {
 int wc_readnext(FILE *in, unsigned char *w) {
 
   int i = 0;
+  //Initialize cur_char with first character.
+
   while (i < MAX_WORDLEN) {
     char cur_char = fgetc(in);
 
