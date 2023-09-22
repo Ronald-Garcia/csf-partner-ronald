@@ -57,7 +57,8 @@ wc_hash:
  */
 	.globl wc_str_compare
 wc_str_compare:
-	/* TODO: implement */
+	
+
 	ret
 
 /*
