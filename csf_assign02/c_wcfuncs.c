@@ -44,21 +44,12 @@ uint32_t wc_hash(const unsigned char *w) {
 // "hi" would compare as less than "high".
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
-  while (1) {
-
-    if (*lhs < *rhs) { 
-      return -1; // If not same character return.
-    } else if (*lhs > *rhs) {
-      return 1;
-    } else if (*lhs == *rhs && *lhs == '\0') {
-      return 0;
-    }
+  while (*lhs == *rhs && *lhs) {
     lhs++;
     rhs++;
-    //Otherwise, go through loop again.
   }
 
-  return 0;
+  return *lhs - *rhs;
 }
 
 // Copy NUL-terminated source string to the destination buffer.
@@ -94,7 +85,7 @@ int wc_isspace(unsigned char c) {
 // Return 1 if the character code in c is an alphabetic character
 // ('A' through 'Z' or 'a' through 'z'), 0 otherwise.
 int wc_isalpha(unsigned char c) {
-  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
 // Read the next word from given input stream, storing
@@ -139,7 +130,7 @@ int wc_readnext(FILE *in, unsigned char *w) {
 // pointed-to by w so that every letter is lower-case.
 void wc_tolower(unsigned char *w) {
   for (int i = 0; w[i] != '\0'; i++) {
-    if (wc_isalpha(w[i]) && w[i] < 97) {
+    if (wc_isalpha(w[i]) && w[i] < 'a') {
       w[i] += 32;
     }
   }
@@ -159,7 +150,7 @@ void wc_trim_non_alpha(unsigned char *w) {
   int new_end_index = end_index - 1; //character before null terminator
 
   // starting at the index of the character before the null terminator, go back until there is an alphabetic character
-  while(!wc_isalpha(w[new_end_index])) {
+  while(new_end_index > 0 && !wc_isalpha(w[new_end_index])) {
     new_end_index--;
   }
 
@@ -199,7 +190,6 @@ struct WordEntry *wc_find_or_insert(struct WordEntry *head, const unsigned char 
   new_head->next = head; // prepend list
   new_head->count = 0; // set count to 0
   wc_str_copy(new_head->word, s);
-
   return new_head; // return new head
 }
 
@@ -210,7 +200,7 @@ struct WordEntry *wc_find_or_insert(struct WordEntry *head, const unsigned char 
 //
 // Returns a pointer to the WordEntry object in the appropriate linked list
 // which represents s.
-struct WordEntry *wc_dict_find_or_insert(struct WordEntry *buckets[], unsigned num_buckets, const unsigned char *s) {
+struct WordEntry *wc_dict_find_or_insert(struct WordEntry **buckets, unsigned num_buckets, const unsigned char *s) {
 
   uint32_t s_hash = wc_hash(s) % num_buckets;
 

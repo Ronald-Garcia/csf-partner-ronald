@@ -26,7 +26,11 @@ int main(int argc, char **argv) {
   }
 
 
-  struct WordEntry** buckets = malloc(sizeof(struct WordEntry*) * HASHTABLE_SIZE);
+  struct WordEntry** buckets = malloc(sizeof(struct WordEntry*) * HASHTABLE_SIZE );
+
+  for (int i = 0; i < HASHTABLE_SIZE; i++) {
+    buckets[i] = NULL;
+  }
 
   // stats (to be printed at end)
   uint32_t total_words = 0;
@@ -46,7 +50,9 @@ int main(int argc, char **argv) {
     wc_tolower(buffer);
 
     wc_trim_non_alpha(buffer);
-    printf("Current word: %s\n", buffer);
+
+    if (buffer[0] == '\0') continue; // if reading a new line, move to next word
+
     struct WordEntry* current_word_entry = wc_dict_find_or_insert(buckets, HASHTABLE_SIZE, buffer);
 
     if (current_word_entry->count == 0) { // if this is the first iteration of this word, add to unique_words
@@ -65,7 +71,7 @@ int main(int argc, char **argv) {
         if (cur_word->count > best_word_count) {
           wc_str_copy(best_word, cur_word->word);
           best_word_count = cur_word->count;
-        } else if ((cur_word->count == best_word_count) && (wc_str_compare(cur_word->word, best_word) == -1)) {
+        } else if ((cur_word->count == best_word_count) && (wc_str_compare(cur_word->word, best_word) < 0)) {
           wc_str_copy(best_word, cur_word->word);
         }
 
