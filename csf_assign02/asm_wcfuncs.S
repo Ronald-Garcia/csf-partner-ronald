@@ -62,50 +62,37 @@ wc_str_compare:
 	* Subroutine arguments: %rdi, %rsi
 	* Return register: %rax
 	*
-	* TODO: WRITE REGISTER USES
 	*/
 	/*Align the stack pointer.*/
-	subq $8, %rsp
+	sub $8, %rsp
 	
 	.Lstr_compare_loop:
-	/*Store first letter of left into r10*/
-	movq (%rdi), %r10
-	/*Store first letter of right into r11*/
-	movq (%rsi), %r11
+		/*Store first letter of left into r10*/
+		mov (%rdi), %r10
+		/*Store first letter of right into r11*/
+		mov (%rsi), %r11
 
-	/*Check if the two characters are the same*/
-	cmpq %r11, %r10
-	/*If left is less, jump to left less state.*/
-	jb .Lstr_compare_left_less
-	/*If right is less, jump to right less state.*/
-	ja .Lstr_compare_left_more
-	/*Otherwise, they are equal, and we can now see if string is over by comparison with null*/
-	cmpq $0, %r10
-	je .Lstr_compare_left_same
-	/*Otherwise, increment pointers and restart loop.*/
-	incq %rdi
-	incq %rsi
-	jmp .Lstr_compare_loop
+		/*Check if the two characters are the same*/
+		cmp %r10, %r11
+		jne .Lstr_compare_done
 
-	.Lstr_compare_left_less:
-	/*If the left is less than right, return -1.*/
-	movq $-1, %rax
-	jmp .Lstr_compare_done
+		/* Check if %r10 == '\0' */
+		test %r10, %r10
+		je .Lstr_compare_done
+		/*Otherwise, increment pointers and restart loop.*/
+		inc %rdi
+		inc %rsi
+		jmp .Lstr_compare_loop
 
-	.Lstr_compare_left_more:
-	/*If the left is more than right, return 1.*/
-	movq $1, %rax
-	jmp .Lstr_compare_done
-
-	.Lstr_compare_left_same:
-	/*If the left is equal to right, return 0.*/
-	movq $0, %rax
-	jmp .Lstr_compare_done
-
+		
 	.Lstr_compare_done:
 	/*Realign stack pointer and return*/
-	addq $8, %rsp
-	ret
+		sub %r11, %r10
+		mov %r10, %rax
+
+		add $8, %rsp
+		leave
+		ret
 
 /*
  * Copy NUL-terminated source string to the destination buffer.

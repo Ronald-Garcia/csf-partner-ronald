@@ -44,12 +44,12 @@ uint32_t wc_hash(const unsigned char *w) {
 // "hi" would compare as less than "high".
 int wc_str_compare(const unsigned char *lhs, const unsigned char *rhs) {
 
-  while (*lhs == *rhs && *lhs) {
+  while ( (*lhs == *rhs) && *lhs) {
     lhs++;
     rhs++;
   }
 
-  return *lhs - *rhs;
+  return (int)*lhs - (int)*rhs;
 }
 
 // Copy NUL-terminated source string to the destination buffer.
@@ -103,20 +103,28 @@ int wc_readnext(FILE *in, unsigned char *w) {
 
   int i = 0;
   //Initialize cur_char with first character.
+  char cur_char;
 
+  // skip leading whitespace and handle EOF start
+  do {
+    cur_char = fgetc(in);
+  } while (cur_char != EOF && wc_isspace(cur_char));
+
+  if (cur_char == EOF) {
+    return 0;
+  }
+
+  // add all the character
   while (i < MAX_WORDLEN) {
-    char cur_char = fgetc(in);
+    w[i] = cur_char; // otherwise, append character to the word and keep reading
+    i++;
 
-    if (cur_char == EOF && i == 0) { // if end of file or error, complete current word and return 0
-      return 0;
-    }
+    cur_char = fgetc(in);
 
     if (wc_isspace(cur_char) || cur_char == EOF) { // if a whitespace character is reached, stop reading.
       break;
     }
 
-    w[i] = cur_char; // otherwise, append character to the word and keep reading
-    i++;
   }
 
   // null terminate word
@@ -150,7 +158,7 @@ void wc_trim_non_alpha(unsigned char *w) {
   int new_end_index = end_index - 1; //character before null terminator
 
   // starting at the index of the character before the null terminator, go back until there is an alphabetic character
-  while(new_end_index > 0 && !wc_isalpha(w[new_end_index])) {
+  while(new_end_index >= 0 && !wc_isalpha(w[new_end_index])) {
     new_end_index--;
   }
 
@@ -212,7 +220,7 @@ struct WordEntry *wc_dict_find_or_insert(struct WordEntry **buckets, unsigned nu
     buckets[s_hash] = new_node;
   }
 
-  return buckets[s_hash];
+  return new_node;
 }
 
 // Free all of the nodes in given linked list of WordEntry objects.

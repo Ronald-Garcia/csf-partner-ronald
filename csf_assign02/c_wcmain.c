@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
   }
 
   FILE* fp = stdin;
-
+  
   if (argc == 2) {
     fp = fopen(argv[1], "r");
     if (fp == NULL) {
@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
   // stats (to be printed at end)
   uint32_t total_words = 0;
   uint32_t unique_words = 0;
-  unsigned char best_word[MAX_WORDLEN]; 
-  unsigned char buffer[MAX_WORDLEN];
+  unsigned char best_word[MAX_WORDLEN + 1]; 
+  unsigned char buffer[MAX_WORDLEN + 1];
 
   best_word[0] = '\0';
   
@@ -50,11 +50,11 @@ int main(int argc, char **argv) {
     wc_tolower(buffer);
 
     wc_trim_non_alpha(buffer);
-
-    if (buffer[0] == '\0') continue; // if reading a new line, move to next word
-
+    
+    // This if statement prevents the storage of a null character as a word 
+    // if (buffer[0] == '\0') continue;
+    
     struct WordEntry* current_word_entry = wc_dict_find_or_insert(buckets, HASHTABLE_SIZE, buffer);
-
     if (current_word_entry->count == 0) { // if this is the first iteration of this word, add to unique_words
       unique_words++;
     }
