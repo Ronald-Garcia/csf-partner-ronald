@@ -138,28 +138,29 @@ wc_str_copy:
 	*/
 
 	/*Allign the stack pointer*/
-	sub $8, %rsp
+	subq $8, %rsp
 	
 	/*Enter loop, leave when at end of sorce string*/
 	.Lstr_copy_loop:
 	/*Store first letter of source into r10*/
-	mov (%rsi), %r10
+	movb (%rsi), %r10b
 	/*Then, check if that letter was 0.*/
-	test %r10, %r10
+	test %r10b, %r10b
 	/*If it was, return. Otherwise, keep increment pointer, store r10 in rdi,
 	keep going.*/
 	je .Lstr_copy_done
-	mov %r10, %rdi
-	inc %rsi
-	inc %rdi
+	movb %r10b, (%rdi)
+	incq %rsi
+	incq %rdi
 	jmp .Lstr_copy_loop
 
 	/*Get here when function is done.*/
 	.Lstr_copy_done:
 	/*Null terminate rdi*/
-	mov %r10, %rdi
+	movb %r10b, (%rdi)
 	/*Realign stack pointer*/
-	add $8, %rsp
+	addq $8, %rsp
+	leave
 	ret
 
 /*
@@ -274,8 +275,59 @@ wc_readnext:
  */
 	.globl wc_tolower
 wc_tolower:
-	/* TODO: implement */
-	ret
+	/* Notes on registers used:
+	* Callee saved registers: %r12, %r13
+	* Subroutine arguments: %rdi
+	* Return register: none, but store string in %rdi
+	*/
+
+	/*Allign the stack pointer*/
+	pushq %r12
+	pushq %r13
+	
+	movq %rdi, %r12 /* Move argument string into register */
+
+	/*Enter loop, leave when at end of the string*/
+
+	.Lwc_tolower_loop:
+		/*Store first letter of the string into r10*/
+		movq (%r12), %r13
+		/*Then, check if that letter was 0.*/
+		test %r13, %r13
+		je .Lwc_tolower_done
+
+		/*If it was, return. Otherwise, check if the character is a letter */
+		movq %r13, %rdi
+		
+		call wc_isalpha /* check if it is a letter */
+
+		/* check if isalpha returned 0 */
+		test %rax, %rax
+		
+		je .Lwc_tolower_arithmetic_skip
+
+		/* if here, it is a letter. Check if upper */
+
+		cmpq $97, %r13
+		/* skip arithmetic calculation if it is already lower */
+		jae .Lwc_tolower_arithmetic_skip 
+
+		/* if here, it is an upper case letter. change letter by adding 32 */
+		addq $32, (%r12)
+
+		.Lwc_tolower_arithmetic_skip:
+		/* move to next letter */
+		incq %r12
+
+		jmp .Lwc_tolower_loop
+
+	/*Get here when function is done.*/
+	.Lwc_tolower_done:
+		/*Realign stack pointer*/
+		popq %r13
+		popq %r12
+		leave
+		ret
 
 /*
  * Remove any non-alphaabetic characters from the end of the
@@ -286,8 +338,67 @@ wc_tolower:
  */
 	.globl wc_trim_non_alpha
 wc_trim_non_alpha:
-	/* TODO: implement */
-	ret
+/* Notes on registers used:
+	* Callee saved registers: %r12
+	* Caller saved registers: %r10
+	* Subroutine arguments: %rdi
+	* Return register: none, but store string in %rdi
+	*/
+
+	/*Allign the stack pointer*/
+	pushq %r12
+	
+	movq %rdi, %r12 /* Move argument string into register */
+	/* r12 will be used as the end pointer */
+
+	movq (%r12), %r10 /* save character */
+
+	/* check if the input string is just null */
+	test %r10, %r10
+	je .Lwc_trim_non_alpha_done /* if it is, just end method */
+
+	.Lwc_trim_non_alpha_get_end:
+
+		movq (%r12), %r10 /* save character */
+
+		/* check if r10 is '\0' */
+		test %r10, %r10 
+		/* if yes, go to loop */
+		je .Lwc_trim_non_alpha_loop
+
+		/* if not, keep going */
+		incq %r12
+		jmp .Lwc_trim_non_alpha_get_end
+
+	.Lwc_trim_non_alpha_loop:
+		
+		decq %r12
+		movq (%r12), %r10
+
+		/*If it was, return. Otherwise, check if the character is a letter */
+		movq %r10, %rdi
+		
+		call wc_isalpha /* check if it is a letter */
+
+		/* check if isalpha returned 0 */
+		test %rax, %rax
+		
+		/* if it is a letter, we are done */
+		jne .Lwc_trim_non_alpha_null_insert
+
+		/* if it is not a letter, keep going */
+		jmp .Lwc_trim_non_alpha_loop
+
+	.Lwc_trim_non_alpha_null_insert:
+		incq %r12
+		movq $0, (%r12)
+
+	/*Get here when function is done.*/
+	.Lwc_trim_non_alpha_done:
+		/*Realign stack pointer*/
+		popq %r12
+		leave
+		ret
 
 /*
  * Search the specified linked list of WordEntry objects for an object
@@ -308,7 +419,7 @@ wc_trim_non_alpha:
  */
 	.globl wc_find_or_insert
 wc_find_or_insert:
-	/* TODO: implement */
+	
 	ret
 
 /*
