@@ -38,6 +38,36 @@
 	.globl wc_hash
 wc_hash:
 	
+	sub $8, %rsp /*Align the stack pointer.*/
+
+	mov %rdi, %r10 /*Store string r10*/
+	mov $5381, %rax /* Storing hash code */
+	mov $0, %r9 /*Just stores 0*/
+
+	.Lwc_hash_loop:
+
+		/*Store current letter into r11*/
+		movq (%r10), %r11
+
+		/* Check if %r11 == '\0' */
+		test %r11, %r11
+		je .Lwc_hash_done
+		
+		leaq (%r9, %rax, 4), %rax
+		leaq (%rax, %rax, 8), %rax
+		addq %r11, %rax
+
+		/*Otherwise, increment pointers and restart loop.*/
+		inc %r10
+		
+		jmp .Lwc_hash_loop
+
+		
+	.Lwc_hash_done:
+	/*Realign stack pointer and return*/
+		add $8, %rsp
+		leave
+		ret
 	ret
 
 /*
