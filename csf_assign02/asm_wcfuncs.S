@@ -68,7 +68,6 @@ wc_hash:
 		add $8, %rsp
 		leave
 		ret
-	ret
 
 /*
  * Compare two strings lexicographically. Return
@@ -132,7 +131,35 @@ wc_str_compare:
  */
 	.globl wc_str_copy
 wc_str_copy:
-	/* TODO: implement */
+	/* Notes on registers used:
+	* Caller saved registers: %r10
+	* Subroutine arguments: %rdi, %rsi
+	* Return register: none, but store string in %rdi
+	*/
+
+	/*Allign the stack pointer*/
+	sub $8, %rsp
+	
+	/*Enter loop, leave when at end of sorce string*/
+	.Lstr_copy_loop:
+	/*Store first letter of source into r10*/
+	mov (%rsi), %r10
+	/*Then, check if that letter was 0.*/
+	test %r10, %r10
+	/*If it was, return. Otherwise, keep increment pointer, store r10 in rdi,
+	keep going.*/
+	je .Lstr_copy_done
+	mov %r10, %rdi
+	inc %rsi
+	inc %rdi
+	jmp .Lstr_copy_loop
+
+	/*Get here when function is done.*/
+	.Lstr_copy_done:
+	/*Null terminate rdi*/
+	mov %r10, %rdi
+	/*Realign stack pointer*/
+	add $8, %rsp
 	ret
 
 /*
