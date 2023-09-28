@@ -9,9 +9,11 @@
  * (Note that there is 4 bytes of padding between the count and next
  * fields.)
  */
+#define WORDENTRY_SIZE          (80)
 #define WORDENTRY_WORD_OFFSET   (0)
 #define WORDENTRY_COUNT_OFFSET  (MAX_WORDLEN+1)
 #define WORDENTRY_NEXT_OFFSET   (MAX_WORDLEN+1+4+4)
+
 
 	.section .rodata
 /* Define any string constants or read-only data here */
@@ -263,9 +265,89 @@ wc_isalpha:
  */
 	.globl wc_readnext
 wc_readnext:
-	/* TODO: implement */
-	ret
+    /* Notes on registers used:
+	* Callee saved registers: %r12, %r13
+	* Caller saved registers: %r10
+	* Subroutine arguments: %rdi
+	* Return register: none, but store string in %rdi
+	*/
+	/*Allign the stack pointer*/
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
 
+	movq %rdi, %r12 /* Move argument file pointer into register */
+	movq %rsi, %r13 /* Move argument string into register */
+	movq $0, %r14   /* Set counter to 0 */
+	.Lwc_readnext_remove_leading_whitespace:
+		
+		/* get next char */
+		movq %r12, %rdi
+		call fgetc
+
+		movq %rax, %r15
+		/* check if EOF or is space */
+		cmpq $-1, %r15
+		jne .Lwc_readnext_leave_whitespace_loop
+		movq %r15, %rdi
+		call wc_isspace
+		cmpq $1, %rax  
+		jne .Lwc_readnext_leave_whitespace_loop
+
+		/* if both, continue loop */
+		jmp .Lwc_readnext_remove_leading_whitespace
+
+
+	.Lwc_readnext_leave_whitespace_loop:
+		cmpq $-1, %r15
+		je .Lwc_readnext_unsuccessful
+	
+	.Lwc_readnext_loop:
+		/* check if we reached max word length */
+		cmpq $MAX_WORDLEN, %r14
+		/* exit if not */
+		jae .Lwc_readnext_successful
+
+
+		/* move letter into the word */
+		movq %r15, (%r13)
+		incq %r14
+		incq %r13
+
+		/* get next char from r12 */
+		movq %r12, %rdi
+		call fgetc
+		movq %rax, %r15
+
+		/* if letter is EOF, get out */
+		cmpq $-1, %r15
+		je .Lwc_readnext_successful
+
+		/* check if whitespace */
+		movq %r15, %rdi
+		call wc_isspace
+
+		/* if whitespace, get out */
+		test %rax, %rax
+		jne .Lwc_readnext_successful
+
+	.Lwc_readnext_successful:
+		movq $0, (%r13)
+		jmp .Lwc_readnext_done
+
+
+	.Lwc_readnext_unsuccessful:
+		movq $0, %rax
+		jmp .Lwc_readnext_done
+
+	.Lwc_readnext_done:
+		popq %r15
+		popq %r14
+		popq %r13
+		popq %r12
+		leave
+		ret
 /*
  * Convert the NUL-terminated character string in the array
  * pointed-to by w so that every letter is lower-case.
@@ -338,7 +420,7 @@ wc_tolower:
  */
 	.globl wc_trim_non_alpha
 wc_trim_non_alpha:
-/* Notes on registers used:
+   /* Notes on registers used:
 	* Callee saved registers: %r12
 	* Caller saved registers: %r10
 	* Subroutine arguments: %rdi
@@ -419,8 +501,81 @@ wc_trim_non_alpha:
  */
 	.globl wc_find_or_insert
 wc_find_or_insert:
-	
-	ret
+   /* Notes on registers used:
+	* Callee saved registers: %r12, %r13
+	* Caller saved registers: %r10
+	* Subroutine arguments: %rdi
+	* Return register: none, but store string in %rdi
+	*/
+	/*Allign the stack pointer*/
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+
+	movq %rdi, %r12 /* Move argument wordentry into register */
+	movq %rsi, %r13 /* Move argument string into register */
+	movq %rdx, %r14 /* Move argument integer pointer into register */
+	movq %rdi, %r15 /* Move argument wordentry into register */
+
+
+	/* r12 will be used as the head wordentry */
+
+	.Lwc_find_or_insert_loop:
+
+		/* check if "cur == null" */
+		test %r12, %r12
+		je .Lwc_find_or_insert_prepend /* if end of list is reached, prepend list */
+
+		movq %r13, %rdi /* add the two strings as parameters for string compare */
+		movq %r14, WORDENTRY_WORD_OFFSET(%r12)
+
+		call wc_str_compare /* call string compare */
+
+		test %rax, %rax /*check if they are the same */
+
+		je .Lwc_find_or_insert_match_found /* if match, go to match_found area */
+
+		/* otherwise, move to the pointer to the next word entry pointer */
+		addq WORDENTRY_NEXT_OFFSET, %r12
+		/* save the word entry pointer */
+		movq (%r12), %r12 
+
+		jmp .Lwc_find_or_insert_loop
+
+	.Lwc_find_or_insert_prepend:
+
+		/* malloc a new word entry */
+		movq $WORDENTRY_SIZE, %rdi
+
+		call malloc 
+
+		/* make *inserted = 1 */
+		movq $1, (%r14)
+
+		/* Move string into rax->word */
+		movq %r13, %rax
+
+		/* Move 0 into rax->count */
+		addq $WORDENTRY_COUNT_OFFSET, %rax
+		movq $0, %rax
+
+		/* Move r15 into rax->next */
+		addq $8, %rax
+		jmp .Lwc_find_or_insert_done
+
+	.Lwc_find_or_insert_match_found:
+		/* make *inserted = 0 */
+		movq $0, (%r14)
+
+	.Lwc_find_or_insert_done:
+		movq %r15, %rax
+		pushq %r15
+		pushq %r14
+		pushq %r13
+		pushq %r12
+		leave
+		ret
 
 /*
  * Find or insert the WordEntry object for the given string (s), returning
@@ -436,8 +591,64 @@ wc_find_or_insert:
  */
 	.globl wc_dict_find_or_insert
 wc_dict_find_or_insert:
-	/* TODO: implement */
-	ret
+	/* Notes on registers used:
+	* Callee saved registers: %r12, %r13, %r14, %r15
+	* Caller saved registers: %r10
+	* Subroutine arguments: %rdi, %rsi, %rdx
+	* Return register: none, but store string in %rdi
+	*/
+	/*Allign the stack pointer*/
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+
+	/* storing old parameters */
+	movq %rdi, %r12 /* storing buckets */
+	movq %rsi, %r13 /* storing num_buckets */
+	movq %rdx, %r14 /* storing string */
+
+	/* getting the hash of r14 */
+	movq %r14, %rdi
+	call wc_hash
+
+	/* removing bits from rdx to divide */
+	movq $0, %rdx
+
+	/* divide hash in rax by num_buckets to get remainder in rdx */
+	divq %r13
+
+	/* hash is in r15 */
+	movq %rdx, %r15
+
+	/* moving buckets[hash] into first param */
+	addq %r15, %r12
+	movq (%r12), %rdi
+	
+	/* moving string into second param */
+	movq %r14, %rsi
+
+	/* moving 0 into third param (inserted) */
+	movq $0, %rdx
+
+	call wc_find_or_insert /* find or insert a word entry */
+
+	/* check if inserted a new node */
+	test %rdx, %rdx
+
+	/* if a node has not been inserted, skip insertion */
+	jne .Lwc_dict_find_or_insert_done
+
+	/* if a node has been inserted, add it to buckets[hash] */
+	movq %rax, (%r12)
+
+	.Lwc_dict_find_or_insert_done:
+		popq %r15
+		popq %r14
+		popq %r13
+		popq %r12
+		leave
+		ret
 
 /*
  * Free all of the nodes in given linked list of WordEntry objects.
@@ -447,8 +658,37 @@ wc_dict_find_or_insert:
  */
 	.globl wc_free_chain
 wc_free_chain:
-	/* TODO: implement */
-	ret
+	
+	subq $8, %rsp 
+
+	movq %rdi, %r10 /* lagging pointer */
+	movq %r10, %r11 /* leading pointer */
+	/* r11 = cur */
+	/* r10 = p */
+	
+
+	.Lwc_free_chain_loop:
+		test %r11, %r11 /* check if null */
+		je .Lwc_free_chain_done /* if null, we are done */
+	
+		/* move reference to next into r11 (cur = cur->next) */
+		addq $WORDENTRY_NEXT_OFFSET, %r11
+		movq (%r11), %r11
+
+		/* free r10 (free p) */
+		movq %r10, %rdi
+		call free
+
+		/* move to next node (p = cur) */
+		movq %r11, %r10
+
+		/* loop again */
+		jmp .Lwc_free_chain_loop
+
+	.Lwc_free_chain_done:
+		addq $8, %rsp
+		leave
+		ret
 
 /*
 vim:ft=gas:

@@ -187,7 +187,6 @@ void test_readnext(TestObjs *objs) {
 
 void test_tolower(TestObjs *objs) {
   unsigned char buf[256];
-
   strcpy((char *) buf, (char *) objs->test_str_2);
   wc_tolower(buf);
   ASSERT(0 == strcmp("this is a sentence with_mixed case.", (char *) buf));
