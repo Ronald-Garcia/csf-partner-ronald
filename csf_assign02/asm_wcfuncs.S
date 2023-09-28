@@ -687,7 +687,7 @@ wc_free_chain:
 	
 
 	.Lwc_free_chain_loop:
-		test %r11, %r11 /* check if null */
+		test %r8, %r8 /* check if null */
 		je .Lwc_free_chain_done /* if null, we are done */
 	
 		/* move reference to next into r11 (cur = cur->next) */
@@ -695,8 +695,13 @@ wc_free_chain:
 
 		/* free r10 (free p) */
 		movq %r10, %rdi
+		/*Set r10 to null*/
+		movq $0, %r10
+		/*Free thing refed by rdi*/
 		call free
-
+		/*Set rdi to null*/
+		movq $0, %rdi
+		
 		/* move to next node (p = cur) */
 		movq %r11, %r10
 
