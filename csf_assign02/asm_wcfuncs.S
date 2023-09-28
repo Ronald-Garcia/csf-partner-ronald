@@ -225,13 +225,13 @@ wc_isalpha:
 	/*Align the stack pointer*/
 	subq $8, %rsp
 	/*Enter comparisions*/
-	cmpq $65, %rdi 
+	cmpb $65, %dil 
 	jb .Lnotalpha /* If below 'A', not a letter */
-	cmpq $90, %rdi 
+	cmpb $90, %dil 
 	jbe .Lalpha /* If below or equal to 'Z' (and above 'A'), then is a letter */
-	cmpq $97, %rdi
+	cmpb $97, %dil
 	jb .Lnotalpha /* If below 'a' and not in 'A' - 'Z', not a letter */
-	cmpq $122, %rdi
+	cmpb $122, %dil
 	jbe .Lalpha /* If above or equal to 'a' and below or equal to 'z', is a letter */
 	jmp .Lnotalpha /* If above 122, not a letter */
 
@@ -367,19 +367,19 @@ wc_tolower:
 	pushq %r12
 	pushq %r13
 	
-	movq %rdi, %r12 /* Move argument string into register */
+	movb %dil, %r12b /* Move argument string into register */
 
 	/*Enter loop, leave when at end of the string*/
 
 	.Lwc_tolower_loop:
 		/*Store first letter of the string into r10*/
-		movq (%r12), %r13
+		movb %r12b, %r13b /*Can't () deref with these*/
 		/*Then, check if that letter was 0.*/
-		test %r13, %r13
+		test %r13b, %r13b
 		je .Lwc_tolower_done
 
 		/*If it was, return. Otherwise, check if the character is a letter */
-		movq %r13, %rdi
+		movb %r13b, %dil
 		
 		call wc_isalpha /* check if it is a letter */
 
@@ -390,16 +390,16 @@ wc_tolower:
 
 		/* if here, it is a letter. Check if upper */
 
-		cmpq $97, %r13
+		cmpb $97, %r13b
 		/* skip arithmetic calculation if it is already lower */
 		jae .Lwc_tolower_arithmetic_skip 
 
 		/* if here, it is an upper case letter. change letter by adding 32 */
-		addq $32, (%r12)
+		addb $32, %r12b /*Can't () deref with these*/
 
 		.Lwc_tolower_arithmetic_skip:
 		/* move to next letter */
-		incq %r12
+		incb %r12b
 
 		jmp .Lwc_tolower_loop
 
@@ -433,18 +433,18 @@ wc_trim_non_alpha:
 	movq %rdi, %r12 /* Move argument string into register */
 	/* r12 will be used as the end pointer */
 
-	movq (%r12), %r10 /* save character */
+	movb (%r12), %r10b /* save character */
 
 	/* check if the input string is just null */
-	test %r10, %r10
+	test %r10b, %r10b
 	je .Lwc_trim_non_alpha_done /* if it is, just end method */
 
 	.Lwc_trim_non_alpha_get_end:
 
-		movq (%r12), %r10 /* save character */
+		movb (%r12), %r10b /* save character */
 
 		/* check if r10 is '\0' */
-		test %r10, %r10 
+		test %r10b, %r10b 
 		/* if yes, go to loop */
 		je .Lwc_trim_non_alpha_loop
 
@@ -455,10 +455,10 @@ wc_trim_non_alpha:
 	.Lwc_trim_non_alpha_loop:
 		
 		decq %r12
-		movq (%r12), %r10
+		movb (%r12), %r10b
 
 		/*If it was, return. Otherwise, check if the character is a letter */
-		movq %r10, %rdi
+		movb %r10b, %dil
 		
 		call wc_isalpha /* check if it is a letter */
 
@@ -473,7 +473,7 @@ wc_trim_non_alpha:
 
 	.Lwc_trim_non_alpha_null_insert:
 		incq %r12
-		movq $0, (%r12)
+		movb $0, (%r12)
 
 	/*Get here when function is done.*/
 	.Lwc_trim_non_alpha_done:
@@ -528,7 +528,9 @@ wc_find_or_insert:
 		je .Lwc_find_or_insert_prepend /* if end of list is reached, prepend list */
 
 		movq %r13, %rdi /* add the two strings as parameters for string compare */
-		movq %r14, WORDENTRY_WORD_OFFSET(%r12)
+		addq WORDENTRY_WORD_OFFSET, %r12 /*Just done to get ref to string*/
+		movq %r12, %rsi
+		subq WORDENTRY_WORD_OFFSET, %r12
 
 		call wc_str_compare /* call string compare */
 
@@ -548,28 +550,45 @@ wc_find_or_insert:
 		/* malloc a new word entry */
 		movq $WORDENTRY_SIZE, %rdi
 
-		call malloc 
+		call malloc /*Pointer to allocated space in rax*/
 
 		/* make *inserted = 1 */
 		movq $1, (%r14)
 
+		/*r8 will act as a local variable for counting this loop*/
+		movq $0, %r8
 		/* Move string into rax->word */
-		movq %r13, %rax
+		.Lwc_find_or_insert_prepend_loop:
+			/*Store a letter*/
+			movb (%r13), %r9b
+			movb %r9b, (%rax)
+			/*If null, leave*/
+			test %r9b, %r9b
+			je .Lwc_find_or_insert_prepend_loop
+			/*If not null, increment rax pointer, maintain count*/
+			incq %rax
+			incq %r8
+		/*Now that word is stored, reset rax pointer to start of struct*/
+		subq %r8, %rax
 
 		/* Move 0 into rax->count */
 		addq $WORDENTRY_COUNT_OFFSET, %rax
-		movq $0, %rax
+		movl $0, (%rax)
 
 		/* Move r15 into rax->next */
 		addq $8, %rax
+		movq %r15, (%rax)
+		/*Reset rax pointer to look at start of word entry again.*/
+		subq $WORDENTRY_NEXT_OFFSET, %rax
+
 		jmp .Lwc_find_or_insert_done
 
 	.Lwc_find_or_insert_match_found:
 		/* make *inserted = 0 */
 		movq $0, (%r14)
+		movq %r15, %rax /*R15 at this location is just ref to start struct*/
 
 	.Lwc_find_or_insert_done:
-		movq %r15, %rax
 		pushq %r15
 		pushq %r14
 		pushq %r13
@@ -662,7 +681,7 @@ wc_free_chain:
 	subq $8, %rsp 
 
 	movq %rdi, %r10 /* lagging pointer */
-	movq %r10, %r11 /* leading pointer */
+	movq %rdi, %r11 /* leading pointer */
 	/* r11 = cur */
 	/* r10 = p */
 	
@@ -672,8 +691,7 @@ wc_free_chain:
 		je .Lwc_free_chain_done /* if null, we are done */
 	
 		/* move reference to next into r11 (cur = cur->next) */
-		addq $WORDENTRY_NEXT_OFFSET, %r11
-		movq (%r11), %r11
+		movq WORDENTRY_NEXT_OFFSET(%r11), %r11
 
 		/* free r10 (free p) */
 		movq %r10, %rdi
