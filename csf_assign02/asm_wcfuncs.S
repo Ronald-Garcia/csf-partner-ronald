@@ -272,6 +272,7 @@ wc_readnext:
 	* Return register: none, but store string in %rdi
 	*/
 	/*Allign the stack pointer*/
+	subq $8, %rsp
 	pushq %r12
 	pushq %r13
 	pushq %r14
@@ -346,6 +347,7 @@ wc_readnext:
 		popq %r14
 		popq %r13
 		popq %r12
+		addq $8, %rsp
 		leave
 		ret
 /*
@@ -364,6 +366,7 @@ wc_tolower:
 	*/
 
 	/*Allign the stack pointer*/
+	subq $8, %rsp
 	pushq %r12
 	pushq %r13
 	
@@ -408,6 +411,7 @@ wc_tolower:
 		/*Realign stack pointer*/
 		popq %r13
 		popq %r12
+		addq $8, %rsp
 		leave
 		ret
 
@@ -508,6 +512,7 @@ wc_find_or_insert:
 	* Return register: none, but store string in %rdi
 	*/
 	/*Allign the stack pointer*/
+	subq $8, %rsp
 	pushq %r12
 	pushq %r13
 	pushq %r14
@@ -593,6 +598,7 @@ wc_find_or_insert:
 		pushq %r14
 		pushq %r13
 		pushq %r12
+		addq $8, %rsp
 		leave
 		ret
 
@@ -617,6 +623,7 @@ wc_dict_find_or_insert:
 	* Return register: none, but store string in %rdi
 	*/
 	/*Allign the stack pointer*/
+	subq $8, %rsp
 	pushq %r12
 	pushq %r13
 	pushq %r14
@@ -666,6 +673,7 @@ wc_dict_find_or_insert:
 		popq %r14
 		popq %r13
 		popq %r12
+		addq $8, %rsp
 		leave
 		ret
 
@@ -679,7 +687,8 @@ wc_dict_find_or_insert:
 wc_free_chain:
 	
 	/*Need callee saved registers, since call malloc*/
-	/*Also alligns stack pointer*/
+	/*Also allign stack pointer*/
+	subq $8, %rsp
 	pushq %r12
 	pushq %r13
 
@@ -715,6 +724,7 @@ wc_free_chain:
 	.Lwc_free_chain_done:
 		popq %r13
 		popq %r12
+		addq $8, %rsp
 		leave
 		ret
 
