@@ -678,38 +678,43 @@ wc_dict_find_or_insert:
 	.globl wc_free_chain
 wc_free_chain:
 	
-	subq $8, %rsp 
+	/*Need callee saved registers, since call malloc*/
+	/*Also alligns stack pointer*/
+	pushq %r12
+	pushq %r13
 
-	movq %rdi, %r10 /* lagging pointer */
-	movq %rdi, %r11 /* leading pointer */
+	movq %rdi, %r12 /* lagging pointer */
+	movq %rdi, %r13 /* leading pointer */
 	/* r11 = cur */
 	/* r10 = p */
 	
 
 	.Lwc_free_chain_loop:
-		test %r8, %r8 /* check if null */
+		test %r13, %r13 /* check if null */
 		je .Lwc_free_chain_done /* if null, we are done */
 	
-		/* move reference to next into r11 (cur = cur->next) */
-		movq WORDENTRY_NEXT_OFFSET(%r11), %r11
+		/* move reference to next into r13 (cur = cur->next) */
+		movq WORDENTRY_NEXT_OFFSET(%r13), %r13
 
-		/* free r10 (free p) */
-		movq %r10, %rdi
-		/*Set r10 to null*/
-		movq $0, %r10
+		/* set up free for cur node (free p) */
+		movq %r12, %rdi
+		/*Set r12 to null*/
+		movq $0, %r12
+
 		/*Free thing refed by rdi*/
 		call free
 		/*Set rdi to null*/
 		movq $0, %rdi
 		
 		/* move to next node (p = cur) */
-		movq %r11, %r10
+		movq %r13, %r12
 
 		/* loop again */
 		jmp .Lwc_free_chain_loop
 
 	.Lwc_free_chain_done:
-		addq $8, %rsp
+		popq %r13
+		popq %r12
 		leave
 		ret
 
