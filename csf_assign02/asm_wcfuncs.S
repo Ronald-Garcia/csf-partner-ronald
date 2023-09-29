@@ -42,25 +42,27 @@ wc_hash:
 	
 	sub $8, %rsp /*Align the stack pointer.*/
 
-	mov %rdi, %r10 /*Store string r10*/
-	mov $5381, %rax /* Storing hash code */
+	movq %rdi, %r10 /*Store string r10*/
+	mov $5381, %eax /* Storing hash code */
 	mov $0, %r9 /*Just stores 0*/
-
+	mov $0, %r11 /* get rid of extra bits */
 	.Lwc_hash_loop:
 
 		/*Store current letter into r11*/
-		movq (%r10), %r11
+		movb (%r10), %r11b
 
 		/* Check if %r11 == '\0' */
-		test %r11, %r11
+		test %r11b, %r11b
 		je .Lwc_hash_done
 		
-		leaq (%r9, %rax, 4), %rax
-		leaq (%rax, %rax, 8), %rax
-		addq %r11, %rax
+		/* hashcode = 4*hashcode + 8*hashcode + hashcode*/
+		movl $33, %edx
+		mull %edx
+
+		addl %r11d, %eax
 
 		/*Otherwise, increment pointers and restart loop.*/
-		inc %r10
+		incq %r10
 		
 		jmp .Lwc_hash_loop
 
@@ -68,7 +70,6 @@ wc_hash:
 	.Lwc_hash_done:
 	/*Realign stack pointer and return*/
 		add $8, %rsp
-		leave
 		ret
 
 /*
@@ -95,34 +96,43 @@ wc_str_compare:
 	*
 	*/
 	/*Align the stack pointer.*/
-	sub $8, %rsp
-	
+	subq $8, %rsp
+	movq $0, %r10
+	movq $0, %r11
+
 	.Lstr_compare_loop:
 		/*Store first letter of left into r10*/
-		mov (%rdi), %r10
+		movq (%rdi), %r10
 		/*Store first letter of right into r11*/
-		mov (%rsi), %r11
+		movq (%rsi), %r11
 
 		/*Check if the two characters are the same*/
-		cmp %r10, %r11
+		cmpb %r10b, %r11b
 		jne .Lstr_compare_done
 
 		/* Check if %r10 == '\0' */
-		test %r10, %r10
-		je .Lstr_compare_done
+		test %r10b, %r10b
+		je .Lstr_compare_done_zero
 		/*Otherwise, increment pointers and restart loop.*/
 		inc %rdi
 		inc %rsi
 		jmp .Lstr_compare_loop
 
 		
-	.Lstr_compare_done:
-	/*Realign stack pointer and return*/
-		sub %r11, %r10
-		mov %r10, %rax
+	.Lstr_compare_done_zero:
+		movl $0, %eax
 
 		add $8, %rsp
-		leave
+		ret
+
+	
+	
+	.Lstr_compare_done:
+		subq %r11, %r10
+	/*Realign stack pointer and return*/
+		movl %r10d, %eax
+
+		add $8, %rsp
 		ret
 
 /*
@@ -141,7 +151,8 @@ wc_str_copy:
 
 	/*Allign the stack pointer*/
 	subq $8, %rsp
-	
+	movq %rdi, %r8
+
 	/*Enter loop, leave when at end of sorce string*/
 	.Lstr_copy_loop:
 	/*Store first letter of source into r10*/
@@ -160,9 +171,11 @@ wc_str_copy:
 	.Lstr_copy_done:
 	/*Null terminate rdi*/
 	movb %r10b, (%rdi)
+	
+	movq %r8, %rdi
+
 	/*Realign stack pointer*/
 	addq $8, %rsp
-	leave
 	ret
 
 /*
@@ -533,9 +546,9 @@ wc_find_or_insert:
 		je .Lwc_find_or_insert_prepend /* if end of list is reached, prepend list */
 
 		movq %r13, %rdi /* add the two strings as parameters for string compare */
-		addq WORDENTRY_WORD_OFFSET, %r12 /*Just done to get ref to string*/
+		addq $WORDENTRY_WORD_OFFSET, %r12 /*Just done to get ref to string*/
 		movq %r12, %rsi
-		subq WORDENTRY_WORD_OFFSET, %r12
+		subq $WORDENTRY_WORD_OFFSET, %r12
 
 		call wc_str_compare /* call string compare */
 
@@ -544,7 +557,7 @@ wc_find_or_insert:
 		je .Lwc_find_or_insert_match_found /* if match, go to match_found area */
 
 		/* otherwise, move to the pointer to the next word entry pointer */
-		addq WORDENTRY_NEXT_OFFSET, %r12
+		addq $WORDENTRY_NEXT_OFFSET, %r12
 		/* save the word entry pointer */
 		movq (%r12), %r12 
 
@@ -560,21 +573,16 @@ wc_find_or_insert:
 		/* make *inserted = 1 */
 		movq $1, (%r14)
 
-		/*r8 will act as a local variable for counting this loop*/
-		movq $0, %r8
-		/* Move string into rax->word */
-		.Lwc_find_or_insert_prepend_loop:
-			/*Store a letter*/
-			movb (%r13), %r9b
-			movb %r9b, (%rax)
-			/*If null, leave*/
-			test %r9b, %r9b
-			je .Lwc_find_or_insert_prepend_loop
-			/*If not null, increment rax pointer, maintain count*/
-			incq %rax
-			incq %r8
-		/*Now that word is stored, reset rax pointer to start of struct*/
-		subq %r8, %rax
+		/* keeping the pointer to wordentry */
+
+		movq %rax, %rdi
+		movq %r13, %rsi
+
+		call wc_str_copy
+
+		/* moving rdi into rax (ref to wordentry struct) */
+
+		movq %rdi, %rax
 
 		/* Move 0 into rax->count */
 		addq $WORDENTRY_COUNT_OFFSET, %rax
@@ -591,15 +599,21 @@ wc_find_or_insert:
 	.Lwc_find_or_insert_match_found:
 		/* make *inserted = 0 */
 		movq $0, (%r14)
-		movq %r15, %rax /*R15 at this location is just ref to start struct*/
+		movq %r12, %rax /*R12 at this location is just ref to matching struct*/
+
 
 	.Lwc_find_or_insert_done:
-		pushq %r15
-		pushq %r14
-		pushq %r13
-		pushq %r12
+		/*Restore address to rdx*/
+		movq %r14, %rdx
+		movq %r15, %rdi /* Move old argument wordentry back into head */
+		movq (%r15), %r8 /* Move old argument wordentry back into head */
+		movq %r8, (%rdi) /* Move old argument wordentry back into head */
+		popq %r15
+		popq %r14
+		popq %r13
+		popq %r12
 		addq $8, %rsp
-		leave
+		
 		ret
 
 /*
@@ -623,6 +637,12 @@ wc_dict_find_or_insert:
 	* Return register: none, but store string in %rdi
 	*/
 	/*Allign the stack pointer*/
+	
+	/* allocating space for local variables (rbp)*/
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rbp
+
 	subq $8, %rsp
 	pushq %r12
 	pushq %r13
@@ -655,15 +675,20 @@ wc_dict_find_or_insert:
 	movq %r14, %rsi
 
 	/* moving 0 into third param (inserted) */
-	movq $0, %rdx
+	movq %rbp, %rdx
+
+	subq $8, %rdx
 
 	call wc_find_or_insert /* find or insert a word entry */
 
 	/* check if inserted a new node */
-	test %rdx, %rdx
+	movq (%rdx), %r10
+
+	/* r10 == 0 */
+	test %r10, %r10
 
 	/* if a node has not been inserted, skip insertion */
-	jne .Lwc_dict_find_or_insert_done
+	je .Lwc_dict_find_or_insert_done
 
 	/* if a node has been inserted, add it to buckets[hash] */
 	movq %rax, (%r12)
@@ -674,9 +699,11 @@ wc_dict_find_or_insert:
 		popq %r13
 		popq %r12
 		addq $8, %rsp
-		leave
-		ret
 
+		addq $32, %rsp
+		popq %rbp
+
+		ret
 /*
  * Free all of the nodes in given linked list of WordEntry objects.
  *
@@ -725,7 +752,6 @@ wc_free_chain:
 		popq %r13
 		popq %r12
 		addq $8, %rsp
-		leave
 		ret
 
 /*

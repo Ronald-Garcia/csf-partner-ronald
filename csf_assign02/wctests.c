@@ -224,7 +224,7 @@ void test_find_or_insert(TestObjs *objs) {
   ASSERT(0 == strcmp("ax's", (const char *) p->word));
   ASSERT(0 == p->count);
   ++p->count;
-
+  
   p = wc_find_or_insert(list, (const unsigned char *) "avis", &inserted);
   ASSERT(0 == inserted);
   ASSERT(p != NULL);
