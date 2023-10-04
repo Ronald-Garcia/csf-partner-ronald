@@ -569,6 +569,7 @@ wc_find_or_insert:
 		movl $0, WORDENTRY_COUNT_OFFSET(%rax)
 
 		/* Move r15 into r12->next */
+		
 		movq %r15, WORDENTRY_NEXT_OFFSET(%rax)
 
 		jmp .Lwc_find_or_insert_done
