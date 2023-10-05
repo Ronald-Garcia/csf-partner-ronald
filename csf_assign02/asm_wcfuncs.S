@@ -9,11 +9,10 @@
  * (Note that there is 4 bytes of padding between the count and next
  * fields.)
  */
-#define WORDENTRY_SIZE          (80)
 #define WORDENTRY_WORD_OFFSET   (0)
 #define WORDENTRY_COUNT_OFFSET  (MAX_WORDLEN+1)
 #define WORDENTRY_NEXT_OFFSET   (MAX_WORDLEN+1+4+4)
-
+#define WORDENTRY_SIZE          (WORDENTRY_NEXT_OFFSET+8)
 
 	.section .rodata
 /* Define any string constants or read-only data here */
@@ -100,6 +99,11 @@ wc_str_compare:
 	movq $0, %r10
 	movq $0, %r11
 
+	testq %rdi, %rdi
+	je .Lstr_compare_null_left
+	testq %rsi, %rsi
+	je .Lstr_compare_null_right
+
 	.Lstr_compare_loop:
 		/*Store first letter of left into r10*/
 		movb (%rdi), %r10b
@@ -111,7 +115,7 @@ wc_str_compare:
 		jne .Lstr_compare_done
 
 		/* Check if %r10 == '\0' */
-		test %r10, %r10
+		testb %r10b, %r10b
 		je .Lstr_compare_done
 		/*Otherwise, increment pointers and restart loop.*/
 		incq %rdi
@@ -119,6 +123,21 @@ wc_str_compare:
 		jmp .Lstr_compare_loop
 
 		
+	.Lstr_compare_null_left:
+
+		cmpq %rsi, %rdi
+		je .Lstr_compare_both_null
+		movl $-1, %eax
+		ret
+	.Lstr_compare_null_right:
+		cmpq %rsi, %rdi
+		je .Lstr_compare_both_null
+		movl $1, %eax
+		ret
+
+	.Lstr_compare_both_null:
+		movl $0, %eax
+		ret
 	.Lstr_compare_done:
 	/*Realign stack pointer and return*/
 		subl %r11d, %r10d
@@ -237,10 +256,10 @@ wc_isalpha:
 	jmp .Lnotalpha /* If above 122, not a letter */
 
 .Lnotalpha:
-	movq $0, %rax /* Put 0 in return register */
+	movl $0, %eax /* Put 0 in return register */
 	jmp .Lisalpha_done
 .Lalpha:
-	movq $1, %rax /* Put 1 in return register */
+	movl $1, %eax /* Put 1 in return register */
 	jmp .Lisalpha_done
 
 .Lisalpha_done:
@@ -277,7 +296,7 @@ wc_readnext:
 	pushq %r13
 	pushq %r14
 	pushq %r15
-	subq $32, %rsp
+	subq $8, %rsp
 
 	movq %rdi, %r12 /* Move argument file pointer into register */
 	movq %rsi, %r13 /* Move argument string into register */
@@ -291,13 +310,13 @@ wc_readnext:
 		movb %al, %r15b
 		/* check if EOF or is space */
 		cmpb $-1, %r15b
-		jne .Lwc_readnext_leave_whitespace_loop
+		je .Lwc_readnext_leave_whitespace_loop
 		movb %r15b, %dil
 		call wc_isspace
 		cmpl $1, %eax  
 		jne .Lwc_readnext_leave_whitespace_loop
 
-		/* if both, continue loop */
+		/* if its a whitespace and not an EOF, continue loop */
 		jmp .Lwc_readnext_remove_leading_whitespace
 
 
@@ -349,7 +368,7 @@ wc_readnext:
 		jmp .Lwc_readnext_done
 
 	.Lwc_readnext_done:
-		addq $32, %rsp
+		addq $8, %rsp
 		popq %r15
 		popq %r14
 		popq %r13
@@ -376,6 +395,10 @@ wc_tolower:
 	pushq %r13
 	
 	movq %rdi, %r12 /* Move argument string into register */
+
+	/* null check*/
+	test %rdi, %rdi
+	je .Lwc_tolower_done
 
 	/*Enter loop, leave when at end of the string*/
 
@@ -516,6 +539,7 @@ wc_find_or_insert:
 	*/
 	/*Allign the stack pointer*/
 	subq $8, %rsp
+
 	pushq %r12
 	pushq %r13
 	pushq %r14
@@ -561,25 +585,27 @@ wc_find_or_insert:
 		movl $1, (%r14)
 
 		movq %rax, %rdi
+		movq %rax, %r12
 		movq %r13, %rsi
 
 		call wc_str_copy
 
 		/* Move 0 into r12->count */
-		movl $0, WORDENTRY_COUNT_OFFSET(%rax)
+		movl $0, WORDENTRY_COUNT_OFFSET(%r12)
 
 		/* Move r15 into r12->next */
 		
-		movq %r15, WORDENTRY_NEXT_OFFSET(%rax)
+		movq %r15, WORDENTRY_NEXT_OFFSET(%r12)
 
 		jmp .Lwc_find_or_insert_done
 
 	.Lwc_find_or_insert_match_found:
 		/* make *inserted = 0 */
-		movq $0, (%r14)
+		movl $0, (%r14)
 		movq %r12, %rax /*R12 at this location is just ref to start struct*/
 
 	.Lwc_find_or_insert_done:
+		
 
 		popq %r15
 		popq %r14
@@ -609,7 +635,10 @@ wc_dict_find_or_insert:
 	* Return register: none, but store string in %rdi
 	*/
 	/*Allign the stack pointer*/
-	subq $8, %rsp
+	pushq %rbp
+	movq %rsp, %rbp
+	addq $16, %rbp
+
 	pushq %r12
 	pushq %r13
 	pushq %r14
@@ -620,33 +649,35 @@ wc_dict_find_or_insert:
 	movq %rsi, %r13 /* storing num_buckets */
 	movq %rdx, %r14 /* storing string */
 
+	/* declaring local variable for find_or_insert*/
+	movl $0, 8(%rbp)
+
 	/* getting the hash of r14 */
 	movq %r14, %rdi
 	call wc_hash
 
 	/* removing bits from rdx to divide */
-	movq $0, %rdx
+	movl $0, %edx
 
 	/* divide hash in rax by num_buckets to get remainder in rdx */
-	divq %r13
+	divl %r13d
 
 	/* hash is in r15 */
-	movq %rdx, %r15
+	movl %edx, %r15d
 
 	/* moving buckets[hash] into first param */
-	addq %r15, %r12
+	leaq (%r12, %r15, 8), %r12 /* r12 + hash * 8 */
 	movq (%r12), %rdi
 	
 	/* moving string into second param */
 	movq %r14, %rsi
 
-	/* moving 0 into third param (inserted) */
-	movq $0, %rdx
+	leaq 8(%rbp), %rdx
 
 	call wc_find_or_insert /* find or insert a word entry */
 
 	/* check if inserted a new node */
-	test %rdx, %rdx
+	cmpl $1, 8(%rbp)
 
 	/* if a node has not been inserted, skip insertion */
 	jne .Lwc_dict_find_or_insert_done
@@ -659,7 +690,8 @@ wc_dict_find_or_insert:
 		popq %r14
 		popq %r13
 		popq %r12
-		addq $8, %rsp
+		addq $16, %rbp
+		popq %rbp
 		ret
 
 /*
