@@ -22,7 +22,7 @@
 	.globl main
 main:
    /* Notes on registers used:
-	* Callee saved registers: %r12, %r13
+	* Callee saved registers: %r12, %r13, %r14
 	* Caller saved registers: %r10
 	* Subroutine arguments: %rdi
 	* Return register: none, but store string in %rdi
@@ -38,22 +38,23 @@ main:
 
 	cmpl $2, %edi /* check if argc > 2 */
 	
-	ja .Lmain_too_many_arg
-	
-	movq $stdin, $filePointer
+	ja .Lmain_too_many_arg /*Too many args, leave program*/
+	movq $stdin, %r10 /*TODO: HOW DOES I/O WORK*/
+	movq %r10, filePointer /*Prep default file pointer.*/
 
-	cmpl $2, %edi
+	cmpl $1, %edi /*check if argc == 1. If yes, use standard input*/
 
-	jne .Lmain_stdin
+	je .Lmain_stdin
 
-	movq 1($rsi), %rdi
+	/*Otherwise, we must open file given as second arg in %rsi.*/
+	movq %rsi, %rdi
 	movq $sReadingString, %rsi
 
 	call fopen
 
-	movq %rax, $filePointer
-
-	testq $filePointer, $filePointer
+	movq %rax, filePointer
+	movq %rax, %r10
+	testq %r10, %r10
 	je .Lmain_invalid_file
 
 	.Lmain_stdin:
@@ -67,36 +68,29 @@ main:
 
 
 
-
-
-
-
-
-
 .Lmain_invalid_file:
 	movl $2, %eax
 
-	movq $stderr, %rdi
-	movq $sInvalidFileMsg, %rsi
-	movq 1(%r13), %rdx
+	/*TODO: PRINT TO STDERR*/
+	/*movq $stderr, %rdi*/
+	movq $sInvalidFileMsg, %rdi
+	movq %r13, %rdx
 
-	call fprintf
+	call printf
 
-	.Lmain_done
+	jmp .Lmain_done
 
 
-.Lmain_too_many_arg:
+.Lmain_too_many_arg: /*Area for when there are too many args in rdi*/
 	movl $1, %eax
 
+	/*TODO: make it print to stderr*/
+	movq $sTooManyArgsMsg, %rdi
+	/*movq $stderr, %rdi*/
 
-	movq $sTooManyArgsMsg, %rsi
-	movq $stderr, %rdi
+	call printf
 
-	call fprintf
-
-	.Lmain_done
-
-
+	jmp .Lmain_done
 
 
 .Lmain_done:
