@@ -463,6 +463,7 @@ wc_trim_non_alpha:
 	
 	movq %rdi, %r12 /* Move argument string into register */
 	/* r12 will be used as the end pointer */
+	movq %rdi, %r13 /*Used as the original string address*/
 
 	movb (%r12), %r10b /* save character */
 
@@ -499,9 +500,19 @@ wc_trim_non_alpha:
 		/* if it is a letter, we are done */
 		jne .Lwc_trim_non_alpha_null_insert
 
-		/* if it is not a letter, keep going */
+		/*If we made it to the start of the word, the whole thing is non alpha
+		and we need to make the start letter null.*/
+		cmpq %r12, %r13/*r12 is current letter, r13 is first letter.*/
+		/*If equal, string is all non-alpha, put null at start*/
+		je .Lwc_trim_non_alpha_all_non_alpha
+
+		/* otherwise, if it is not a letter, keep going */
 		jmp .Lwc_trim_non_alpha_loop
 
+	.Lwc_trim_non_alpha_all_non_alpha:
+	movb $0, (%r12)
+	jmp .Lwc_trim_non_alpha_done
+	
 	.Lwc_trim_non_alpha_null_insert:
 		incq %r12
 		movb $0, (%r12)
