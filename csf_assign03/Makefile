@@ -8,12 +8,12 @@ CXX_SRCS = main.cpp cache_funcs.cpp
 
 OBJS = $(CXX_SRCS:.cpp=.o)
 
-main : $(OBJS) 
+csim : $(OBJS) 
 	make depend
 	$(CXX) -o $@ $(OBJS) -lm -lz
 
 clean :
-	rm -f *.o main
+	rm -f *.o csim
 
 depend :
 	$(CXX) -M $(CXXFLAGS) $(CXX_SRCS) >> depend.mak
