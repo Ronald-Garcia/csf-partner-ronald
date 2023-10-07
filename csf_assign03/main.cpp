@@ -2,8 +2,9 @@
 #include <iostream>
 #include <exception>
 #include <string>
-
-int is_pos_power_of_two(int num);
+#include <deque>
+#include "main.h"
+#include "cache_funcs.h"
 
 int main(int argc, char** argv) {
 
@@ -104,6 +105,14 @@ int main(int argc, char** argv) {
         std::cout << "User chose lru :D" << std::endl;
     }
 
+
+    std::deque<std::string> test_deque;
+
+    read_file(std::cin, test_deque);
+
+    for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 
+        std::cout << *it << std::endl;
+    }
 
 
 }

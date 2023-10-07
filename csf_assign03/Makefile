@@ -4,7 +4,7 @@ CXXFLAGS = -g -std=c++14 -Wall -Wextra -pedantic
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c $*.cpp -o $*.o
 
-CXX_SRCS = main.cpp
+CXX_SRCS = main.cpp cache_funcs.cpp
 
 OBJS = $(CXX_SRCS:.cpp=.o)
 
