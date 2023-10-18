@@ -5,6 +5,7 @@
 #include <deque>
 #include "main.h"
 #include "cache_funcs.h"
+#include "cashe.h"
 
 int main(int argc, char** argv) {
 
@@ -105,16 +106,22 @@ int main(int argc, char** argv) {
         std::cout << "User chose lru :D" << std::endl;
     }
 
+    //Initialize the cashe.
+    Cache* cache = initialize_cache(num_sets, set_size);
 
     std::deque<std::string> test_deque;
 
-    read_file(std::cin, test_deque);
+    read_file(std::cin, test_deque); //Put each mem access into deque.
+
+    int address;
+    bool is_load = handle_line(test_deque.at(0), &address);
+
+    std::cout << is_load << " " << address << std::endl;
 
     for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 
         std::cout << *it << std::endl;
     }
-
-
+    
 }
 
 
@@ -128,6 +135,14 @@ int is_pos_power_of_two(int num) {
     }
 
     return num == 1;
+}
+
+void print_cache(Cache* cache, int num_sets, int set_size){
+    for (int i = 0; i < num_sets; i++) {
+        for (int j = 0; j < set_size; j++) {
+            std::cout << cache->sets.at(i).slots.at(j).tag << i << j << std::endl;
+        }
+    }
 }
 
 
