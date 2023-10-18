@@ -116,6 +116,10 @@ int main(int argc, char** argv) {
     int address;
     bool is_load = handle_line(test_deque.at(0), &address);
 
+    int number_of_clock_cycles;
+
+    number_of_clock_cycles = write_allocate_write_through_lru(cache, is_load, address, block_size);
+
     std::cout << is_load << " " << address << std::endl;
 
     for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 

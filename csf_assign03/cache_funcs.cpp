@@ -24,6 +24,7 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
         //After initializing a set, put it in the cache.
         new_cache->sets.push_back(*newSet);
     }
+    new_cache->index_bits = log2(1); //Custom int log 2 function.
     return new_cache;
 }
 
@@ -56,3 +57,24 @@ bool handle_line(std::string line, int* address) {
     return is_load;
 }
 
+/**
+ * @param cache is the cache.
+ * @param is_load is if its a load or not.
+ * @param address number representing adress in memory.
+ * @param block_size size of slot, amount of memory loaded.
+ * @return number of clock cycles
+*/
+int write_allocate_write_through_lru(Cache* cache, bool is_load, int address, int block_size) {
+    bool hit = check_hit(cache, address, block_size);
+}
+
+/**
+ * @param cache
+ * @param address
+ * @param block_size
+ * @return if it was a hit or not.
+*/
+bool check_hit(Cache* cache, int address, int block_size) {
+    int index_bits;
+    return false;
+}
