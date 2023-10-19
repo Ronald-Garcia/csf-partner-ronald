@@ -141,7 +141,7 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
         } else { //Otherwise, we have not hit yet.
 
             // track of the least recently used slot
-            if (lru_slot->access_ts < cur_slot->access_ts) {
+            if (lru_slot->access_ts > cur_slot->access_ts) {
                 lru_slot = cur_slot;
             }
             
@@ -156,7 +156,7 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
                 if (is_load) {
                     cur_slot->is_dirty = false;
                     return MEMORY_PENALTY;
-                } else if (is_write_through) { //If write through, double penelty from store to mem.
+                } else if (is_write_through) { //If write through, double penalty from store to mem.
                     cur_slot->is_dirty = false;
                     return MEMORY_PENALTY * 2;
                 } else { //Otherwise, write back, so regular mem penalty, but dirty block.
@@ -173,7 +173,13 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
     lru_slot->tag = tag;
     lru_slot->load_ts = TIME;
     lru_slot->access_ts = TIME++;
-    lru_slot->is_dirty = false;
+
+    //If its a write-back, that black is dirty. Otherwise, clean.
+    if (!is_write_through) {
+        lru_slot->is_dirty = true;
+    } else {
+        lru_slot->is_dirty = false;
+    }
 
     // if the slot being evicted is dirty and we are a write back, 
     // additional penalty of storing the dirty block on top of miss.
