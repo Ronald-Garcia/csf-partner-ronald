@@ -19,9 +19,9 @@ typedef struct set {
 
 typedef struct {
     std::vector<Set> sets;
-    int offset_bits;
-    int index_bits;
-    int block_size;
+    uint32_t offset_bits;
+    uint32_t index_bits;
+    uint32_t associativity_factor;
 } Cache;
 
 #endif

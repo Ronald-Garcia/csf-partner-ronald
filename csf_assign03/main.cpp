@@ -5,8 +5,7 @@
 #include <deque>
 #include "main.h"
 #include "cache_funcs.h"
-#include "cashe.h"
-
+void print_cache(Cache* cache, int line_size);
 int main(int argc, char** argv) {
 
     if (argc != 7) {
@@ -15,13 +14,13 @@ int main(int argc, char** argv) {
     }
 
     // number of sets in cache
-    int num_sets;
+    uint32_t num_sets;
 
-    // number of blocks in a set
-    int set_size;
+    // associativity
+    uint32_t associativity_factor;
 
     // number of bytes in a block
-    int block_size; //This is offset.
+    uint32_t cache_line_size; //This is offset.
 
 
     // TODO: consider if user plugs in float (1.5 => 1)
@@ -31,10 +30,10 @@ int main(int argc, char** argv) {
         num_sets = std::stoi(argv[1]);
 
         // gets the set_size and tries to parse it as an int
-        set_size = std::stoi(argv[2]);
+        associativity_factor = std::stoi(argv[2]);
 
         // gets the block_size and tries to parse it as an int
-        block_size = std::stoi(argv[3]);
+        cache_line_size = std::stoi(argv[3]);
 
     } catch (std::invalid_argument& e) {
 
@@ -47,12 +46,12 @@ int main(int argc, char** argv) {
         return 1;
     } 
 
-    if (!is_pos_power_of_two(set_size)) {
+    if (!is_pos_power_of_two(associativity_factor)) {
         std::cerr << "ERROR: 'number of blocks' must be a positive power of 2." << std::endl;
         return 1;
     }
 
-    if (!is_pos_power_of_two(block_size) || block_size < 4) {
+    if (!is_pos_power_of_two(cache_line_size) || cache_line_size < 4) {
         std::cerr << "ERROR: 'number of bytes' must be a positive power of 2 and at least 4." << std::endl;
         return 1;
     }
@@ -107,26 +106,29 @@ int main(int argc, char** argv) {
     }
 
     //Initialize the cashe.
-    Cache* cache = initialize_cache(num_sets, set_size);
-    cache->block_size = block_size; //Finish cache initialization
+    Cache* cache = initialize_cache(num_sets, associativity_factor, cache_line_size);
+
+    print_cache(cache, cache_line_size);
 
     std::deque<std::string> test_deque;
 
     read_file(std::cin, test_deque); //Put each mem access into deque.
 
-    int address;
-    bool is_load = handle_line(test_deque.at(0), &address);
-
     int number_of_clock_cycles;
 
-    number_of_clock_cycles = write_allocate_write_through_lru(cache, is_load, address, block_size);
-
-    std::cout << is_load << " " << address << std::endl;
-
     for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 
+
         std::cout << *it << std::endl;
+
+        uint32_t address;
+        bool is_load = handle_line(*it, &address);
+
+
+        number_of_clock_cycles += write_allocate_write_through_lru(cache, is_load, address);
+
     }
-    
+    print_cache(cache, cache_line_size);
+
 }
 
 
@@ -142,10 +144,14 @@ int is_pos_power_of_two(int num) {
     return num == 1;
 }
 
-void print_cache(Cache* cache, int num_sets, int set_size){
-    for (int i = 0; i < num_sets; i++) {
-        for (int j = 0; j < set_size; j++) {
-            std::cout << cache->sets.at(i).slots.at(j).tag << i << j << std::endl;
+void print_cache(Cache* cache, int line_size){
+    for (int i = 0; i < (int) cache->sets.size(); i++) {
+        for (int j = 0; j < line_size; j++) {
+            std::cout << "SLOT AT LINE " << i << " AND OFFSET " << j << std::endl;
+            std::cout << "TAG:\t\t" << cache->sets.at(i).slots.at(j).tag << std::endl;
+            std::cout << "ACCESS TIME: \t" << cache->sets.at(i).slots.at(j).access_ts << std::endl;
+            std::cout << "LOAD TIME: \t" << cache->sets.at(i).slots.at(j).load_ts << std::endl;
+            std::cout << "VALID: \t\t" << cache->sets.at(i).slots.at(j).valid << std::endl;
         }
     }
 }
