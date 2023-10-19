@@ -219,7 +219,7 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
         }
 
         // track of the least recently used slot
-        if (lru_slot->access_ts < cur_slot->access_ts) {
+        if (lru_slot->access_ts > cur_slot->access_ts) {
             lru_slot = cur_slot;
         }
         
