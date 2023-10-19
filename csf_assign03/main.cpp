@@ -105,30 +105,39 @@ int main(int argc, char** argv) {
         std::cout << "User chose lru :D" << std::endl;
     }
 
-    //Initialize the cashe.
+    //Initialize the cache.
     Cache* cache = initialize_cache(num_sets, num_slots, slot_size);
 
-    print_cache(cache, slot_size);
+    print_cache(cache, num_slots);
 
     std::deque<std::string> test_deque;
 
     read_file(std::cin, test_deque); //Put each mem access into deque.
 
-    int number_of_clock_cycles;
+    int total_cycles = 0;
+    int store_count = 0;
+    int load_count = 0;
+    int load_hit_count = 0;
+    int store_hit_count = 0;
+    int penalty = slot_size / 4;
 
     for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 
 
-        std::cout << *it << std::endl;
+        //std::cout << *it << std::endl;
 
         uint32_t address;
         bool is_load = handle_line(*it, &address);
 
-
-        number_of_clock_cycles += write_allocate_write_through_lru(cache, is_load, address);
-
+        if (is_load) {
+            load_count++;
+        } else {
+            store_count++;
+        }
+        total_cycles += 1 + penalty * handle_address(cache, write_allocate, is_write_through, is_load, is_lru, address, &load_hit_count, &store_hit_count);
     }
-    print_cache(cache, slot_size);
+    print_cache(cache, num_slots);
 
+    print_results(load_count, store_count, load_hit_count, store_hit_count, total_cycles);
 }
 
 
@@ -144,10 +153,10 @@ int is_pos_power_of_two(int num) {
     return num == 1;
 }
 
-void print_cache(Cache* cache, int line_size){
+void print_cache(Cache* cache, int num_slots){
     for (int i = 0; i < (int) cache->sets.size(); i++) {
-        for (int j = 0; j < line_size; j++) {
-            std::cout << "SLOT AT LINE " << i << " AND OFFSET " << j << std::endl;
+        for (int j = 0; j < num_slots; j++) {
+            std::cout << "SLOT #" << j << " IN SET #" << i << std::endl;
             std::cout << "TAG:\t\t" << cache->sets.at(i).slots.at(j).tag << std::endl;
             std::cout << "ACCESS TIME: \t" << cache->sets.at(i).slots.at(j).access_ts << std::endl;
             std::cout << "LOAD TIME: \t" << cache->sets.at(i).slots.at(j).load_ts << std::endl;
@@ -155,5 +164,16 @@ void print_cache(Cache* cache, int line_size){
         }
     }
 }
+void print_results(int total_loads, int total_stores, int load_hits, int store_hits, int total_cycles) {
+
+    std::cout << "Total loads: " << total_loads << std::endl;
+    std::cout << "Total stores: " << total_stores << std::endl;
+    std::cout << "Load hits: " << load_hits << std::endl;
+    std::cout << "Load misses: " << total_loads - load_hits << std::endl;
+    std::cout << "Store hits: " << store_hits << std::endl;
+    std::cout << "Store misses: " << total_stores - store_hits << std::endl;
+    std::cout << "Total cycles: " << total_cycles << std::endl;
+}
+
 
 

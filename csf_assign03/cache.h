@@ -10,6 +10,7 @@ typedef struct Slot {
     bool valid;
     uint32_t load_ts;
     uint32_t access_ts;
+    bool is_dirty;
 
 } Slot;
 
