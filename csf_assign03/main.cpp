@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     int set_size;
 
     // number of bytes in a block
-    int block_size;
+    int block_size; //This is offset.
 
 
     // TODO: consider if user plugs in float (1.5 => 1)
@@ -108,6 +108,7 @@ int main(int argc, char** argv) {
 
     //Initialize the cashe.
     Cache* cache = initialize_cache(num_sets, set_size);
+    cache->block_size = block_size; //Finish cache initialization
 
     std::deque<std::string> test_deque;
 

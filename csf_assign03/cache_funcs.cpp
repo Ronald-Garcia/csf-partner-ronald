@@ -4,6 +4,8 @@
 #include <exception>
 #include <cmath>
 
+uint64_t TIME = 0;
+
 void read_file(std::istream &in, std::deque<std::string> &trace) {
 
     std::string buf;
@@ -14,7 +16,7 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
 }
 
 
- Cache* initialize_cache(int num_sets,int set_size) {
+ Cache* initialize_cache(int num_sets, int set_size) {
     Cache* new_cache = new Cache;
     for (int i = 0; i < num_sets; i++) {
         Set* newSet = new Set;
@@ -24,8 +26,24 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
         //After initializing a set, put it in the cache.
         new_cache->sets.push_back(*newSet);
     }
-    new_cache->index_bits = log2(1); //Custom int log 2 function.
+    new_cache->index_bits = log2_with_pow_2(num_sets); //Custom int log 2 function.
+    new_cache->offset_bits = log2_with_pow_2(set_size);
     return new_cache;
+}
+
+/** Finds the integer log base two of a power of two.
+ * @param num number to find the log base two of
+ *      Pre: number is a power of 2.
+ * @return log base two of the number.
+*/
+int log2_with_pow_2(int num) {
+    int counter = 0;
+    //While power bit is not right most, keep shifting and count shifts.
+    while (num != 1) {
+        num = num >> 1;
+        counter++;
+    }
+    return counter;
 }
 
 /**
@@ -65,16 +83,54 @@ bool handle_line(std::string line, int* address) {
  * @return number of clock cycles
 */
 int write_allocate_write_through_lru(Cache* cache, bool is_load, int address, int block_size) {
-    bool hit = check_hit(cache, address, block_size);
+    int tag = address >> cache->index_bits + cache->offset_bits; //Tag is the left over bits after index and offset.
+    Slot* slot = find_slot(cache, address, block_size);
+    if (slot->valid && slot->tag == tag) { //If hit, update timestamp and return 1 clock cycle.
+        TIME++; //Update TIME.
+        slot->access_ts = TIME;
+        return 1; //One clockcycle passed for hit.
+    } else { //Otherwise, we had a miss. Update tag, update to valid, remove lru if needed, return 100 clock cycles.
+        slot->tag = tag;
+        slot->valid = true;
+        removeLRU();
+    }
+}
+
+/** Remove LRU
+ * @param cache the cache
+*/
+void removeLRU(Cache* cache) {
+    
 }
 
 /**
- * @param cache
- * @param address
- * @param block_size
- * @return if it was a hit or not.
+ * @param cache is the cache
+ * @param address is the memory address
+ * @return address of slot found.
 */
-bool check_hit(Cache* cache, int address, int block_size) {
-    int index_bits;
-    return false;
+Slot* find_slot(Cache* cache, uint32_t address) {
+    int offset;
+    int tag_bits = 32 - cache->index_bits + cache->offset_bits;
+
+    Set* set = find_set(cache, address);
+
+    offset = address << tag_bits + cache->index_bits; //Remove tag and index.
+    offset = address >> tag_bits + cache->index_bits; //Move it back to the right.
+
+    return &set->slots.at(offset);
+}
+
+/**
+ * @param cache is the cache.
+ * @param address is the memory address being accessed.
+ * @return address of set found.
+*/
+Set* find_set(Cache* cache, uint32_t address) {
+    int index;
+    int tag_bits = 32 - cache->index_bits + cache->offset_bits;
+
+    index = (address << tag_bits); //Remove the tag bits.
+    index = (index >> (tag_bits) + cache->offset_bits); //Then, remove the offset bits.
+
+    return &cache->sets.at(index);
 }
