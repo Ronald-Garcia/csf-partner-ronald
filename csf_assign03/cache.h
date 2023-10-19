@@ -21,7 +21,6 @@ typedef struct {
     std::vector<Set> sets;
     uint32_t offset_bits;
     uint32_t index_bits;
-    uint32_t associativity_factor;
 } Cache;
 
 #endif

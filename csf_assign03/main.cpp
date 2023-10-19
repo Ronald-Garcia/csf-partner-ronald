@@ -5,7 +5,7 @@
 #include <deque>
 #include "main.h"
 #include "cache_funcs.h"
-void print_cache(Cache* cache, int line_size);
+
 int main(int argc, char** argv) {
 
     if (argc != 7) {
@@ -16,11 +16,11 @@ int main(int argc, char** argv) {
     // number of sets in cache
     uint32_t num_sets;
 
-    // associativity
-    uint32_t associativity_factor;
+    // number of slots per set 
+    uint32_t num_slots;
 
     // number of bytes in a block
-    uint32_t cache_line_size; //This is offset.
+    uint32_t slot_size; //This is offset (___DOESNT MATTER___).
 
 
     // TODO: consider if user plugs in float (1.5 => 1)
@@ -30,10 +30,10 @@ int main(int argc, char** argv) {
         num_sets = std::stoi(argv[1]);
 
         // gets the set_size and tries to parse it as an int
-        associativity_factor = std::stoi(argv[2]);
+        num_slots = std::stoi(argv[2]);
 
         // gets the block_size and tries to parse it as an int
-        cache_line_size = std::stoi(argv[3]);
+        slot_size = std::stoi(argv[3]);
 
     } catch (std::invalid_argument& e) {
 
@@ -46,12 +46,12 @@ int main(int argc, char** argv) {
         return 1;
     } 
 
-    if (!is_pos_power_of_two(associativity_factor)) {
+    if (!is_pos_power_of_two(num_slots)) {
         std::cerr << "ERROR: 'number of blocks' must be a positive power of 2." << std::endl;
         return 1;
     }
 
-    if (!is_pos_power_of_two(cache_line_size) || cache_line_size < 4) {
+    if (!is_pos_power_of_two(slot_size) || slot_size < 4) {
         std::cerr << "ERROR: 'number of bytes' must be a positive power of 2 and at least 4." << std::endl;
         return 1;
     }
@@ -106,9 +106,9 @@ int main(int argc, char** argv) {
     }
 
     //Initialize the cashe.
-    Cache* cache = initialize_cache(num_sets, associativity_factor, cache_line_size);
+    Cache* cache = initialize_cache(num_sets, num_slots, slot_size);
 
-    print_cache(cache, cache_line_size);
+    print_cache(cache, slot_size);
 
     std::deque<std::string> test_deque;
 
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
         number_of_clock_cycles += write_allocate_write_through_lru(cache, is_load, address);
 
     }
-    print_cache(cache, cache_line_size);
+    print_cache(cache, slot_size);
 
 }
 

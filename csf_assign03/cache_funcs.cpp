@@ -19,12 +19,12 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
 }
 
 
- Cache* initialize_cache(uint32_t num_sets, uint32_t assoc_fac, uint32_t line_size) {
+ Cache* initialize_cache(uint32_t num_sets, uint32_t num_slots, uint32_t slot_size) {
 
     Cache* new_cache = new Cache;
-    for (uint32_t i = 0; i < num_sets * assoc_fac; i++) {
+    for (uint32_t i = 0; i < num_sets; i++) {
         Set* newSet = new Set;
-        for (uint32_t j = 0; j < line_size; j++) { //Initalize all of the slots in a set with 0s.
+        for (uint32_t j = 0; j < num_slots; j++) { //Initalize all of the slots in a set with 0s.
             newSet->slots.push_back({0, 0, 0, 0});
         }
         //After initializing a set, put it in the cache.
@@ -32,8 +32,7 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
     }
 
     new_cache->index_bits = log2_with_pow_2(num_sets); //Custom int log 2 function.
-    new_cache->offset_bits = log2_with_pow_2(line_size);
-    new_cache->associativity_factor = assoc_fac;
+    new_cache->offset_bits = log2_with_pow_2(slot_size);
 
     return new_cache;
 }
@@ -86,12 +85,27 @@ bool handle_line(std::string line, uint32_t* address) {
  * @param cache is the cache.
  * @param is_load is if its a load or not.
  * @param address number representing adress in memory.
- * @param block_size size of slot, amount of memory loaded.
  * @return number of clock cycles
 */
 int write_allocate_write_through_lru(Cache* cache, bool is_load, uint32_t address) {
     uint32_t tag = address >> (cache->index_bits + cache->offset_bits); //Tag is the left over bits after index and offset.
-    Slot* slot = find_slot(cache, address);
+    Set* set = find_set(cache, address);
+
+    for (int i = 0; i < (int)set->slots.size(); i++) {
+        Slot* cur_slot = &set->slots.at(i);
+        
+        if (!cur_slot->valid) {
+            cur_slot->valid = true;
+            cur_slot->tag = tag;
+            cur_slot->load_ts = TIME;
+            cur_slot->access_ts = TIME++;
+        }
+    }
+
+    /* loop through each slot in the set
+        if all of them are valid and dont have the same tag, its a miss and we evict
+    */
+
     if (slot->valid && slot->tag == tag) { //If hit, update timestamp and return 1 clock cycle.
         slot->access_ts = TIME;
         TIME++; //Update TIME.
@@ -152,28 +166,13 @@ bool try_lru_slot_in(Cache* cache, uint32_t address) {
 
     return true;
 }
-
-
-
-/**
- * @param cache is the cache
- * @param address is the memory address
- * @return address of slot found.
-*/
-Slot* find_slot(Cache* cache, uint32_t address) {
-    
-    Set* set = find_set(cache, address);
-
-    return &set->slots.at(calc_offset_bits(address, cache));
-}
-
 /**
  * @param cache is the cache.
  * @param address is the memory address being accessed.
  * @return address of set found.
 */
 Set* find_set(Cache* cache, uint32_t address) {
-    return &cache->sets.at(calc_index_bits(address, cache) * cache->associativity_factor);
+    return &cache->sets.at(calc_index_bits(address, cache));
 }
 
 uint32_t calc_tag_bits(uint32_t address, Cache* cache) {
