@@ -169,7 +169,7 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
     lru_slot->load_ts = TIME;
     lru_slot->access_ts = TIME++;
 
-    //If its a write-back, that black is dirty. Otherwise, clean.
+    //If it's a write-back, that block is dirty. Otherwise, clean.
     if (!is_write_through) {
         lru_slot->is_dirty = true;
     } else {
@@ -181,9 +181,9 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
     if (write_back_dirty_block) {
         return 2 * MEMORY_PENALTY;
     }
-
-    // if write through, just write to memory, because you can just evict it.
-    return MEMORY_PENALTY;
+    //CAN REMOVE IF, HERE INCASE WRONG FOR NOW
+    // if write through, write to memory and then additional penalty from immediate store to mem.
+    return MEMORY_PENALTY * 2;
 }
 
 int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count) {
@@ -208,7 +208,7 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
                 return 0;
             } else {
                 (*store_hit_count)++;
-                // if a no-write-allocate, has to be a write-through cache
+                // if a no-write-allocate, has to be a write-through cache. One mem pen.
                 return MEMORY_PENALTY;
             }
         } else { //else, we have not hit yet.
@@ -218,7 +218,7 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
                 lru_slot = cur_slot;
             }
             
-            // if there is an invalid block, add into it. This is a miss.
+            // if there is an available block, add into it. This is a miss.
             if (!cur_slot->valid) {
 
                 // if it is a load, add to cache like normal.
@@ -228,6 +228,7 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
                     cur_slot->load_ts = TIME;
                     cur_slot->access_ts = TIME++;
                     cur_slot->is_dirty = false;
+                    return MEMORY_PENALTY;
                 } else { //Otherwise, it is a miss, and we DO NOT modify cache.
                 // Just write the memory you accessed back to memory, so 2* mem pen.
                 return MEMORY_PENALTY * 2;
