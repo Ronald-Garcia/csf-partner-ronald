@@ -14,11 +14,15 @@ Cache* initialize_cache(uint32_t num_sets,uint32_t assoc_fac, uint32_t line_size
 
 bool handle_line(std::string line, uint32_t* address);
 
-int handle_address(Cache* cache, bool write_allocate, bool is_write_through, bool is_load, bool is_lru, uint32_t address, int* hit_count, int* miss_count);
+int handle_address(Cache* cache, bool write_allocate, bool is_write_through, bool is_load, bool is_lru, uint32_t address, int* hit_count, int* miss_count, int slot_size);
 
-int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count);
+int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
 
-int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
+int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
+
+int write_allocate_fifo(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
+
+int no_write_allocate_fifo(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
 
 Slot* find_slot(Cache* cache, uint32_t address);
 

@@ -101,14 +101,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (is_lru) {
+    /*if (is_lru) {
         std::cout << "User chose lru :D" << std::endl;
-    }
+    }*/
 
     //Initialize the cache.
     Cache* cache = initialize_cache(num_sets, num_slots, slot_size);
 
-    print_cache(cache, num_slots);
+    //print_cache(cache, num_slots);
 
     std::deque<std::string> test_deque;
 
@@ -133,11 +133,12 @@ int main(int argc, char** argv) {
         } else {
             store_count++;
         }
-        total_cycles += 1 + penalty * handle_address(cache, write_allocate, is_write_through, is_load, is_lru, address, &load_hit_count, &store_hit_count);
+        total_cycles += handle_address(cache, write_allocate, is_write_through, is_load, is_lru, address, &load_hit_count, &store_hit_count, slot_size);
     }
-    print_cache(cache, num_slots);
 
     print_results(load_count, store_count, load_hit_count, store_hit_count, total_cycles);
+
+    delete cache;
 }
 
 
