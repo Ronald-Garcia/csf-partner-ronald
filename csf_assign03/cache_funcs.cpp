@@ -85,20 +85,15 @@ int handle_address(Cache* cache, bool write_allocate, bool is_write_through, boo
 
     // MILESTONE 2
     if (is_lru) {
-        if (write_allocate) {
-            if (is_write_through) {
-                return write_allocate_lru(cache, is_load, is_write_through, address, hit_count, miss_count);
-            } else {
-
-            }
-        } else {
-
+        if (write_allocate) { //If write allocate lru, go to that function.
+            return write_allocate_lru(cache, is_load, is_write_through, address, hit_count, miss_count);
+        } else { //Else, it's a no write allocate lru, call that function.
+            return no_write_allocate_lru(cache, is_load, address, hit_count, miss_count);
         }
     }
 
     return 0;
 }
-
 
 /**
  * @param cache is the cache.
@@ -213,42 +208,46 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
                 return 0;
             } else {
                 (*store_hit_count)++;
-                // if a no-write-allocate, has to be a write through cache
+                // if a no-write-allocate, has to be a write-through cache
                 return MEMORY_PENALTY;
             }
-        }
+        } else { //else, we have not hit yet.
 
-        // track of the least recently used slot
-        if (lru_slot->access_ts > cur_slot->access_ts) {
-            lru_slot = cur_slot;
-        }
-        
-        // if there is an invalid block, add the slot (a miss)
-        if (!cur_slot->valid) {
-
-            // if it is a store, do not add to cache.
-            if (is_load) {
-                cur_slot->valid = true;
-                cur_slot->tag = tag;
-                cur_slot->load_ts = TIME;
-                cur_slot->access_ts = TIME++;
-                cur_slot->is_dirty = false;
+            // track of the least recently used slot
+            if (lru_slot->access_ts > cur_slot->access_ts) {
+                lru_slot = cur_slot;
             }
-            return MEMORY_PENALTY - !is_load;
+            
+            // if there is an invalid block, add into it. This is a miss.
+            if (!cur_slot->valid) {
+
+                // if it is a load, add to cache like normal.
+                if (is_load) {
+                    cur_slot->valid = true;
+                    cur_slot->tag = tag;
+                    cur_slot->load_ts = TIME;
+                    cur_slot->access_ts = TIME++;
+                    cur_slot->is_dirty = false;
+                } else { //Otherwise, it is a miss, and we DO NOT modify cache.
+                // Just write the memory you accessed back to memory, so 2* mem pen.
+                return MEMORY_PENALTY * 2;
+                }
+            }
         }
     }
 
     // if here, all slots were valid and none of them had the same tag
     // evict the least recently used slot (miss). If a store, do not evict
-    // (because nothing is being saved)
+    // (because nothing is being saved), but return 2 * mem pen.
     if (is_load) {
         lru_slot->tag = tag;
         lru_slot->load_ts = TIME;
         lru_slot->access_ts = TIME++;
         lru_slot->is_dirty = false;
-    }   
-
-    return MEMORY_PENALTY;
+        return MEMORY_PENALTY;
+    } else { //Else, an access and store to and from mem.
+        return MEMORY_PENALTY * 2;
+    }
 }
 /**
  * @param cache is the cache.

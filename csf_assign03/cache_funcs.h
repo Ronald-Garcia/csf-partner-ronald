@@ -18,7 +18,7 @@ int handle_address(Cache* cache, bool write_allocate, bool is_write_through, boo
 
 int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count);
 
-int no_write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count);
+int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
 Slot* find_slot(Cache* cache, uint32_t address);
 
