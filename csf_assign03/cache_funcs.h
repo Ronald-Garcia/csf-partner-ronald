@@ -32,5 +32,11 @@ uint32_t calc_offset_bits(uint32_t address, Cache* cache);
 
 uint32_t calc_tag_bits(uint32_t address, Cache* cache);
 
-Slot* choose_eviction(Slot*);
+int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty);
+
+int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count, int penalty);
+
+void slot_in(Slot* slot, uint32_t tag);
+
+Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru);
 #endif
