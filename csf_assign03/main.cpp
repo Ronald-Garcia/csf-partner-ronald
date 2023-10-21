@@ -101,14 +101,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    /*if (is_lru) {
-        std::cout << "User chose lru :D" << std::endl;
-    }*/
-
     //Initialize the cache.
     Cache* cache = initialize_cache(num_sets, num_slots, slot_size);
-
-    //print_cache(cache, num_slots);
 
     std::deque<std::string> test_deque;
 
@@ -119,12 +113,8 @@ int main(int argc, char** argv) {
     int load_count = 0;
     int load_hit_count = 0;
     int store_hit_count = 0;
-    int penalty = slot_size / 4;
 
     for (std::deque<std::string>::const_iterator it = test_deque.cbegin(); test_deque.cend() != it; it++) { 
-
-        //std::cout << *it << std::endl;
-
         uint32_t address;
         bool is_load = handle_line(*it, &address);
 

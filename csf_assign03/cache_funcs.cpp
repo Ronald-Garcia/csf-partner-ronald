@@ -85,19 +85,10 @@ bool handle_line(std::string line, uint32_t* address) {
 
 int handle_address(Cache* cache, bool write_allocate, bool is_write_through, bool is_load, bool is_lru, uint32_t address, int* hit_count, int* miss_count, int slot_size) {
 
-    // MILESTONE 2
-    if (is_lru) {
-        if (write_allocate) { //If write allocate lru, go to that function.
-            return write_allocate_lru(cache, is_load, is_write_through, address, hit_count, miss_count, slot_size);
-        } else { //Else, it's a no write allocate lru, call that function.
-            return no_write_allocate_lru(cache, is_load, address, hit_count, miss_count, slot_size);
-        }
-    } else {
-        if (write_allocate) {
-            return write_allocate_fifo(cache, is_load, is_write_through, address, hit_count, miss_count, slot_size);
-        } else {
-            return no_write_allocate_fifo(cache, is_load, address, hit_count, miss_count, slot_size);
-        }
+    if (write_allocate) { //If write allocate lru, go to that function.
+        return handle_write_allocate(is_lru, cache, is_load, is_write_through, address, hit_count, miss_count, slot_size);
+    } else { //Else, it's a no write allocate lru, call that function.
+        return handle_no_write_allocate(is_lru, cache, is_load, address, hit_count, miss_count, slot_size);
     }
 
     return 0;
@@ -109,11 +100,11 @@ int handle_address(Cache* cache, bool write_allocate, bool is_write_through, boo
  * @param address number representing adress in memory.
  * @return number of clock cycles
 */
-int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
+int handle_write_allocate(bool is_lru, Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
 
     uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
     Set* set = find_set(cache, address);
-    Slot* lru_slot = &set->slots.at(0);
+    Slot* eviction_slot = &set->slots.at(0);
     int penalty = slot_size / 4;
 
     // loop through each slot of the set
@@ -122,77 +113,38 @@ int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32
 
         // if there is a match, then its a hit
         if (cur_slot->valid && cur_slot->tag == tag) {
-
-            // if a hit, a slot has been accessed
-            cur_slot->access_ts = TIME++;
-
-            // a load hit loads from cache (no penalty)
-            if (is_load) {
-                (*load_hit_count)++;
-                return 1;
-            } else { //Else, it's a store hit.
-                (*store_hit_count)++;
-                
-                // if a write-back, just modify cur value (no penalty)
-                if (!is_write_through) {
-                    cur_slot->is_dirty = true;
-                    return 1;
-                } else { 
-                    // if a store hit in a write-through, write it to memory immediately (100 clock cycle penalty)
-                    return penalty * MEMORY_PENALTY;
-                }
-            }
-        } else { //Otherwise, we have not hit yet.
-
-            // track of the least recently used slot
-            if (lru_slot->access_ts > cur_slot->access_ts) {
-                lru_slot = cur_slot;
-            }
-            
-            // if there is an invalid block, we have a miss, but open space. Add to slot.
-            // For write-allocate, load and store both load into cache.
-            if (!cur_slot->valid) {
-                cur_slot->valid = true;
-                cur_slot->tag = tag;
-                cur_slot->load_ts = TIME;
-                cur_slot->access_ts = TIME++;
-                cur_slot->is_dirty = false;
-
-                //If a load, mark not dirty and return.
-                return 2 + penalty * MEMORY_PENALTY;
-            }
+            return handle_hit_write_allocate(cur_slot, is_load, is_write_through, load_hit_count, store_hit_count, penalty);
+        } 
+        
+        eviction_slot = choose_eviction(eviction_slot, cur_slot, is_lru);
+        
+        // if there is an invalid block, we have a miss, but open space. Add to slot.
+        // For write-allocate, load and store both load into cache.
+        if (!cur_slot->valid) {
+            slot_in(cur_slot, tag);
+            return 2 + penalty * MEMORY_PENALTY;
         }
     }
     // if here, all slots were valid and none of them had the same tag (miss).
     // Evict the least recently used slot.
-    bool write_back_dirty_block = !is_write_through && lru_slot->is_dirty;
+    bool write_back_dirty_block = !is_write_through && eviction_slot->is_dirty;
     
-    lru_slot->tag = tag;
-    lru_slot->load_ts = TIME;
-    lru_slot->access_ts = TIME++;
-    lru_slot->is_dirty = false;
-    /*//If it's a write-back, that block is dirty. Otherwise, clean.
-    if (!is_write_through) {
-        lru_slot->is_dirty = true;
-    } else {
-        lru_slot->is_dirty = false;
-    }*/
+    slot_in(eviction_slot, tag);
 
     // if the slot being evicted is dirty and we are a write back, 
     // additional penalty of storing the dirty block on top of miss.
     if (write_back_dirty_block) {
         return 4 + 2 * penalty * MEMORY_PENALTY;
     }
-    //CAN REMOVE IF, HERE INCASE WRONG FOR NOW
-    // if write through, write to memory and then additional penalty from immediate store to mem.
+    // if write through, write to memory and save into cache (2)
     return 2 + penalty * MEMORY_PENALTY;
 }
 
-int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
+int handle_no_write_allocate(bool is_lru, Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
 
     uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
     Set* set = find_set(cache, address);
-    Slot* lru_slot = &set->slots.at(0);
+    Slot* eviction_slot = &set->slots.at(0);
     int penalty = slot_size / 4;
 
     // loop through each slot of the set
@@ -201,210 +153,34 @@ int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* loa
 
         // if there is a match, then its a hit
         if (cur_slot->valid && cur_slot->tag == tag) { //Hits return immediately.
+            return handle_hit_no_write_allocate(cur_slot, is_load, load_hit_count, store_hit_count, penalty);
+        } 
 
-            // if a hit, a slot has been accessed
-            cur_slot->access_ts = TIME++;
+        eviction_slot = choose_eviction(eviction_slot, cur_slot, is_lru);
+        
+        // if there is an available block, add into it. This is a miss.
+        if (!cur_slot->valid) {
 
-            // a load hit is loads from cache (no penalty)
+            // if it is a load, add to cache like normal.
             if (is_load) {
-                (*load_hit_count)++;
-                return 1;
-            } else {
-                (*store_hit_count)++;
-                // if a no-write-allocate, has to be a write-through cache. One mem pen.
-                return penalty * MEMORY_PENALTY;
+                slot_in(cur_slot, tag);
+                return 1 + penalty * MEMORY_PENALTY;
             }
-        } else { //else, we have not hit yet.
 
-            // track of the least recently used slot
-            if (lru_slot->access_ts > cur_slot->access_ts) {
-                lru_slot = cur_slot;
-            }
-            
-            // if there is an available block, add into it. This is a miss.
-            if (!cur_slot->valid) {
-
-                // if it is a load, add to cache like normal.
-                if (is_load) {
-                    cur_slot->valid = true;
-                    cur_slot->tag = tag;
-                    cur_slot->load_ts = TIME;
-                    cur_slot->access_ts = TIME++;
-                    cur_slot->is_dirty = false;
-                    return 1 + penalty * MEMORY_PENALTY;
-                }
-
-                return penalty * MEMORY_PENALTY;
-            }
+            // if it is a store, write to memory (but do not write to cache)
+            return penalty * MEMORY_PENALTY;
         }
     }
 
     // if here, all slots were valid and none of them had the same tag
     // evict the least recently used slot (miss). If a store, do not evict
-    // (because nothing is being saved), but return 2 * mem pen.
+    // (because nothing is being saved), so only storing to memory
     if (is_load) {
-        lru_slot->tag = tag;
-        lru_slot->load_ts = TIME;
-        lru_slot->access_ts = TIME++;
-        lru_slot->is_dirty = false;
+        slot_in(eviction_slot, tag);
         return 1 + penalty * MEMORY_PENALTY;
     } 
     return penalty * MEMORY_PENALTY;
 }
-
-
-
-
-/**
- * @param cache is the cache.
- * @param is_load is if its a load or not.
- * @param address number representing adress in memory.
- * @return number of clock cycles
-*/
-int write_allocate_fifo(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
-
-    uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
-    Set* set = find_set(cache, address);
-    Slot* fifo_slot = &set->slots.at(0);
-    int penalty = slot_size / 4;
-
-    // loop through each slot of the set
-    for (int i = 0; i < (int)set->slots.size(); i++) {
-        Slot* cur_slot = &set->slots.at(i);
-
-        // if there is a match, then its a hit
-        if (cur_slot->valid && cur_slot->tag == tag) {
-
-            // if a hit, a slot has been accessed
-            cur_slot->access_ts = TIME++;
-
-            // a load hit loads from cache (no penalty)
-            if (is_load) {
-                (*load_hit_count)++;
-                return 1;
-            } else { //Else, it's a store hit.
-            (*store_hit_count)++;
-                
-                // if a write-back, just modify cur value (no penalty)
-                if (!is_write_through) {
-                    cur_slot->is_dirty = true;
-                    return 1;
-                } else { 
-                    // if a store hit in a write-through, write it to memory immediately (100 clock cycle penalty)
-                    return penalty * MEMORY_PENALTY;
-                }
-            }
-        } else { //Otherwise, we have not hit yet.
-
-            // track of the least recently used slot
-            if (fifo_slot->load_ts > cur_slot->load_ts) {
-                fifo_slot = cur_slot;
-            }
-            
-            // if there is an invalid block, we have a miss, but open space. Add to slot.
-            // For write-allocate, load and store both load into cache.
-            if (!cur_slot->valid) {
-                cur_slot->valid = true;
-                cur_slot->tag = tag;
-                cur_slot->load_ts = TIME;
-                cur_slot->access_ts = TIME++;
-                cur_slot->is_dirty = false;
-                
-                return 2 + penalty * MEMORY_PENALTY;
-            }
-        }
-    }
-    // if here, all slots were valid and none of them had the same tag (miss).
-    // Evict the least recently used slot.
-    bool write_back_dirty_block = !is_write_through && fifo_slot->is_dirty;
-    
-    fifo_slot->tag = tag;
-    fifo_slot->load_ts = TIME;
-    fifo_slot->access_ts = TIME++;
-    fifo_slot->is_dirty = false;
-
-    /*//If it's a write-back, that block is dirty. Otherwise, clean.
-    if (!is_write_through) {
-        fifo_slot->is_dirty = true;
-    } else {
-        fifo_slot->is_dirty = false;
-    }*/
-
-    // if the slot being evicted is dirty and we are a write back, 
-    // additional penalty of storing the dirty block on top of miss.
-    if (write_back_dirty_block) {
-        return 4 + 2 * penalty * MEMORY_PENALTY;
-    }
-    
-    // if write through, write to memory and then additional penalty from immediate store to mem.
-    return 2 + penalty * MEMORY_PENALTY;
-}
-
-int no_write_allocate_fifo(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
-
-    uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
-    Set* set = find_set(cache, address);
-    Slot* fifo_slot = &set->slots.at(0);
-
-    // loop through each slot of the set
-    for (int i = 0; i < (int)set->slots.size(); i++) {
-        Slot* cur_slot = &set->slots.at(i);
-
-        // if there is a match, then its a hit
-        if (cur_slot->valid && cur_slot->tag == tag) { //Hits return immediately.
-
-            // if a hit, a slot has been accessed
-            cur_slot->access_ts = TIME++;
-
-            // a load hit is loads from cache (no penalty)
-            if (is_load) {
-                (*load_hit_count)++;
-                return 0;
-            } else {
-                (*store_hit_count)++;
-                // if a no-write-allocate, has to be a write-through cache. One mem pen.
-                return MEMORY_PENALTY;
-            }
-        } else { //else, we have not hit yet.
-
-            // track of the least recently used slot
-            if (fifo_slot->access_ts > cur_slot->access_ts) {
-                fifo_slot = cur_slot;
-            }
-            
-            // if there is an available block, add into it. This is a miss.
-            if (!cur_slot->valid) {
-
-                // if it is a load, add to cache like normal.
-                if (is_load) {
-                    cur_slot->valid = true;
-                    cur_slot->tag = tag;
-                    cur_slot->load_ts = TIME;
-                    cur_slot->access_ts = TIME++;
-                    cur_slot->is_dirty = false;
-                    return MEMORY_PENALTY;
-                } else { //Otherwise, it is a miss, and we DO NOT modify cache.
-                // Just write the memory you accessed back to memory, so 2* mem pen.
-                return MEMORY_PENALTY * 2;
-                }
-            }
-        }
-    }
-
-    // if here, all slots were valid and none of them had the same tag
-    // evict the least recently used slot (miss). If a store, do not evict
-    // (because nothing is being saved), but return 2 * mem pen.
-    if (is_load) {
-        fifo_slot->tag = tag;
-        fifo_slot->load_ts = TIME;
-        fifo_slot->access_ts = TIME++;
-        fifo_slot->is_dirty = false;
-        return MEMORY_PENALTY;
-    } else { //Else, an access and store to and from mem.
-        return MEMORY_PENALTY * 2;
-    }
-}
-
 
 /**
  * @param cache is the cache.
@@ -439,4 +215,60 @@ uint32_t calc_index_bits(uint32_t address, Cache* cache) {
     address >>= cache->offset_bits;
 
     return address;
+}
+
+int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty) {
+    slot->access_ts = TIME++;
+
+    if (is_load) {
+        (*load_hit_count)++;
+        return 1;
+    }
+
+    (*store_hit_count)++;
+
+    if (is_write_through) {
+        return penalty * MEMORY_PENALTY;
+    }
+
+    slot->is_dirty = true;
+    return 1;
+}
+
+int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count, int penalty) {
+    slot->access_ts = TIME++;
+
+    if (is_load) {
+        (*load_hit_count)++;
+        return 1;
+    }
+
+    (*store_hit_count)++;
+
+    return penalty * MEMORY_PENALTY;
+}
+
+void slot_in(Slot* slot, uint32_t tag) {
+    slot->valid = true;
+    slot->tag = tag;
+    slot->load_ts = TIME;
+    slot->access_ts = TIME++;
+    slot->is_dirty = false;
+}
+
+Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru) {
+    if (is_lru) {
+
+        if (cur_eviction->access_ts > slot->access_ts) {
+            return slot;
+        }
+
+        return cur_eviction;
+    }
+
+    if (cur_eviction->load_ts > slot->load_ts) {
+        return slot;
+    }
+
+    return cur_eviction;
 }

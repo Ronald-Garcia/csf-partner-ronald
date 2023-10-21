@@ -16,13 +16,9 @@ bool handle_line(std::string line, uint32_t* address);
 
 int handle_address(Cache* cache, bool write_allocate, bool is_write_through, bool is_load, bool is_lru, uint32_t address, int* hit_count, int* miss_count, int slot_size);
 
-int write_allocate_lru(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
+int handle_write_allocate(bool is_lru, Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
 
-int no_write_allocate_lru(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
-
-int write_allocate_fifo(Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
-
-int no_write_allocate_fifo(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
+int handle_no_write_allocate(bool is_lru, Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size);
 
 Slot* find_slot(Cache* cache, uint32_t address);
 
@@ -36,5 +32,5 @@ uint32_t calc_offset_bits(uint32_t address, Cache* cache);
 
 uint32_t calc_tag_bits(uint32_t address, Cache* cache);
 
-
+Slot* choose_eviction(Slot*);
 #endif
