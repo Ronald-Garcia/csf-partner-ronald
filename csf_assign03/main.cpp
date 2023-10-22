@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     }
 
     //Initialize the cache.
-    Cache* cache = initialize_cache(num_sets, num_slots, slot_size);
+    Cache* cache = initialize_cache(num_sets, num_slots, slot_size, write_allocate, is_write_through, is_lru);
 
     std::deque<std::string> test_deque;
 
@@ -123,11 +123,12 @@ int main(int argc, char** argv) {
         } else {
             store_count++;
         }
-        total_cycles += handle_address(cache, write_allocate, is_write_through, is_load, is_lru, address, &load_hit_count, &store_hit_count, slot_size);
+        total_cycles += handle_address(cache, is_load, address, &load_hit_count, &store_hit_count);
     }
 
     print_results(load_count, store_count, load_hit_count, store_hit_count, total_cycles);
 
+    delete cache->options;
     delete cache;
 }
 

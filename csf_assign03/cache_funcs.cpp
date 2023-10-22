@@ -19,7 +19,7 @@ void read_file(std::istream &in, std::deque<std::string> &trace) {
 }
 
 
-Cache* initialize_cache(uint32_t num_sets, uint32_t num_slots, uint32_t slot_size) {
+Cache* initialize_cache(uint32_t num_sets, uint32_t num_slots, uint32_t slot_size, bool write_allocate, bool is_write_through, bool is_lru) {
 
     Cache* new_cache = new Cache;
     for (uint32_t i = 0; i < num_sets; i++) {
@@ -36,14 +36,16 @@ Cache* initialize_cache(uint32_t num_sets, uint32_t num_slots, uint32_t slot_siz
     new_cache->index_bits = log2_with_pow_2(num_sets); //Custom int log 2 function.
     new_cache->offset_bits = log2_with_pow_2(slot_size);
 
+    new_cache->options = new Options;
+
+    new_cache->options->write_allocate = write_allocate;
+    new_cache->options->is_write_through = is_write_through;
+    new_cache->options->is_lru = is_lru;
+    new_cache->options->slot_size = slot_size;
+
     return new_cache;
 }
 
-/** Finds the integer log base two of a power of two.
- * @param num number to find the log base two of
- *      Pre: number is a power of 2.
- * @return log base two of the number.
-*/
 uint32_t log2_with_pow_2(uint32_t num) {
     uint32_t counter = 0;
     //While power bit is not right most, keep shifting and count shifts.
@@ -54,11 +56,6 @@ uint32_t log2_with_pow_2(uint32_t num) {
     return counter;
 }
 
-/**
- * @param line is the line being parsed
- * @param address is a pointer to an int that stores address in line.
- * @return 1 if load, 0 if store.
-*/
 bool handle_line(std::string line, uint32_t* address) {
     bool is_load;
 
@@ -83,24 +80,25 @@ bool handle_line(std::string line, uint32_t* address) {
     return is_load;
 }
 
-int handle_address(Cache* cache, bool write_allocate, bool is_write_through, bool is_load, bool is_lru, uint32_t address, int* hit_count, int* miss_count, int slot_size) {
-
-    if (write_allocate) { //If write allocate lru, go to that function.
-        return handle_write_allocate(is_lru, cache, is_load, is_write_through, address, hit_count, miss_count, slot_size);
+int handle_address(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count) {
+    Options* options = cache->options;
+    if (options->write_allocate) { //If write allocate lru, go to that function.
+        return handle_write_allocate(cache, is_load, address, load_hit_count, store_hit_count);
     } else { //Else, it's a no write allocate lru, call that function.
-        return handle_no_write_allocate(is_lru, cache, is_load, address, hit_count, miss_count, slot_size);
+        return handle_no_write_allocate(cache, is_load, address, load_hit_count, store_hit_count);
     }
 
     return 0;
 }
 
-/**
- * @param cache is the cache.
- * @param is_load is if its a load or not.
- * @param address number representing adress in memory.
- * @return number of clock cycles
-*/
-int handle_write_allocate(bool is_lru, Cache* cache, bool is_load, bool is_write_through, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
+int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count) {
+
+    Options* op = cache->options;
+
+    uint32_t slot_size = op->slot_size;
+    bool is_lru = op->is_lru;
+    bool is_write_through = op->is_write_through;
+
 
     uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
     Set* set = find_set(cache, address);
@@ -140,7 +138,12 @@ int handle_write_allocate(bool is_lru, Cache* cache, bool is_load, bool is_write
     return 2 + penalty * MEMORY_PENALTY;
 }
 
-int handle_no_write_allocate(bool is_lru, Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count, int slot_size) {
+int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count) {
+
+    Options* op = cache->options;
+
+    uint32_t slot_size = op->slot_size;
+    bool is_lru = op->is_lru;
 
     uint32_t tag = calc_tag_bits(address, cache); //Tag is the left over bits after index and offset.
     Set* set = find_set(cache, address);
@@ -182,11 +185,6 @@ int handle_no_write_allocate(bool is_lru, Cache* cache, bool is_load, uint32_t a
     return penalty * MEMORY_PENALTY;
 }
 
-/**
- * @param cache is the cache.
- * @param address is the memory address being accessed.
- * @return address of set found.
-*/
 Set* find_set(Cache* cache, uint32_t address) {
     return &cache->sets.at(calc_index_bits(address, cache));
 }
@@ -195,14 +193,6 @@ uint32_t calc_tag_bits(uint32_t address, Cache* cache) {
 
     // gets the bits that make up the tag 
     address >>= (cache->index_bits + cache->offset_bits);
-    return address;
-}
-
-uint32_t calc_offset_bits(uint32_t address, Cache* cache) {
-
-    // gets rid of the tag bits and the index bits
-    address &= ~(~(0U) << (cache->offset_bits));
-
     return address;
 }
 
