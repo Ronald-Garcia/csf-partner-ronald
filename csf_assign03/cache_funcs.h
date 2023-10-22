@@ -45,6 +45,19 @@ bool handle_line(std::string line, uint32_t* address);
  */
 Cache* initialize_cache(uint32_t num_sets,uint32_t num_slots, uint32_t slot_size, bool write_allocate, bool is_write_through, bool is_lru);
 
+/*
+ *************
+ * SET FUNCS *
+ *************
+ */
+
+/** Function to find a set associated with the index of the address
+ * @param cache the cache to search in
+ * @param address the address 
+ * @return the pointer to the set
+ */
+Set* find_set(Cache* cache, uint32_t address);
+
 
 /*
  *****************
@@ -103,14 +116,30 @@ void slot_in(Slot* slot, uint32_t tag);
  */
 Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru);
 
+/*
+ ******************
+ * HELPER METHODS *
+ ******************
+ */
+
+/** Function to return the log_2(num)
+ * @param num the number to log
+ * @return the result log_2(num)
+ */
+uint32_t log2_with_pow_2(uint32_t num);
+
+/** Function to handle a write_allocate cache
+ * @param cache the cache 
+ * @param is_load whether or not the command is a load
+ * @param address the address to be handled
+ * @param load_hit_count a counter to keep track of load hits
+ * @param store_hit_count a counter to keep track of store hits
+ */
 int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
 int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
 
-Set* find_set(Cache* cache, uint32_t address);
-
-uint32_t log2_with_pow_2(uint32_t num);
 
 
 int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty);
