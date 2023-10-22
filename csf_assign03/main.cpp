@@ -128,8 +128,7 @@ int main(int argc, char** argv) {
 
     print_results(load_count, store_count, load_hit_count, store_hit_count, total_cycles);
 
-    delete cache->options;
-    delete cache;
+    delete_cache(cache);
 }
 
 
@@ -149,10 +148,10 @@ void print_cache(Cache* cache, int num_slots){
     for (int i = 0; i < (int) cache->sets.size(); i++) {
         for (int j = 0; j < num_slots; j++) {
             std::cout << "SLOT #" << j << " IN SET #" << i << std::endl;
-            std::cout << "TAG:\t\t" << cache->sets.at(i).slots.at(j).tag << std::endl;
-            std::cout << "ACCESS TIME: \t" << cache->sets.at(i).slots.at(j).access_ts << std::endl;
-            std::cout << "LOAD TIME: \t" << cache->sets.at(i).slots.at(j).load_ts << std::endl;
-            std::cout << "VALID: \t\t" << cache->sets.at(i).slots.at(j).valid << std::endl;
+            std::cout << "TAG:\t\t" << cache->sets.at(i)->slots.at(j)->tag << std::endl;
+            std::cout << "ACCESS TIME: \t" << cache->sets.at(i)->slots.at(j)->access_ts << std::endl;
+            std::cout << "LOAD TIME: \t" << cache->sets.at(i)->slots.at(j)->load_ts << std::endl;
+            std::cout << "VALID: \t\t" << cache->sets.at(i)->slots.at(j)->valid << std::endl;
         }
     }
 }

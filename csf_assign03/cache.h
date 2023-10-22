@@ -15,15 +15,8 @@ typedef struct Slot {
 } Slot;
 
 typedef struct set {
-    std::vector<Slot> slots;
+    std::vector<Slot*> slots;
 } Set;
-
-typedef struct {
-    std::vector<Set> sets;
-    uint32_t offset_bits;
-    uint32_t index_bits;
-    Options* options;
-} Cache;
 
 typedef struct {
     bool write_allocate;
@@ -31,5 +24,13 @@ typedef struct {
     bool is_lru;
     uint32_t slot_size;
 } Options;
+
+typedef struct {
+    std::vector<Set*> sets;
+    uint32_t offset_bits;
+    uint32_t index_bits;
+    Options* options;
+} Cache;
+
 
 #endif

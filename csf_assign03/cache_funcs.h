@@ -45,6 +45,12 @@ bool handle_line(std::string line, uint32_t* address);
  */
 Cache* initialize_cache(uint32_t num_sets,uint32_t num_slots, uint32_t slot_size, bool write_allocate, bool is_write_through, bool is_lru);
 
+
+/** Function to deallocate a cache
+ * @param cache the cache to delete
+ */
+void delete_cache(Cache* cache);
+
 /*
  *************
  * SET FUNCS *
@@ -57,6 +63,26 @@ Cache* initialize_cache(uint32_t num_sets,uint32_t num_slots, uint32_t slot_size
  * @return the pointer to the set
  */
 Set* find_set(Cache* cache, uint32_t address);
+
+/*
+ **************
+ * SLOT FUNCS *
+ **************
+ */
+
+/** Function to insert a tag into a slot
+ * @param slot the slot to insert into
+ * @param tag the tag to insert
+ */
+void slot_in(Slot* slot, uint32_t tag);
+
+/** Function to choose the slot that should be evicted
+ * @param cur_eviction the current to-be-evicted slot
+ * @param slot the contender
+ * @param is_lru the ruleset for choosing an eviction
+ * @return the pointer to the slot that should be evicted between the two 
+ */
+Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru);
 
 
 /*
@@ -90,33 +116,6 @@ uint32_t calc_tag_bits(uint32_t address, Cache* cache);
 int handle_address(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
 /*
- **************
- * SLOT FUNCS *
- **************
- */
-
-/** Function to find the slot that an address is associated with
- * @param cache the cache to look in
- * @param address the address
- * @return the pointer to the slot
- */
-Slot* find_slot(Cache* cache, uint32_t address);
-
-/** Function to insert a tag into a slot
- * @param slot the slot to insert into
- * @param tag the tag to insert
- */
-void slot_in(Slot* slot, uint32_t tag);
-
-/** Function to choose the slot that should be evicted
- * @param cur_eviction the current to-be-evicted slot
- * @param slot the contender
- * @param is_lru the ruleset for choosing an eviction
- * @return the pointer to the slot that should be evicted between the two 
- */
-Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru);
-
-/*
  ******************
  * HELPER METHODS *
  ******************
@@ -128,24 +127,46 @@ Slot* choose_eviction(Slot* cur_eviction, Slot* slot, bool is_lru);
  */
 uint32_t log2_with_pow_2(uint32_t num);
 
-/** Function to handle a write_allocate cache
+/** Function to handle an operation on a write_allocate cache
  * @param cache the cache 
- * @param is_load whether or not the command is a load
- * @param address the address to be handled
+ * @param is_load whether or not the operation is a load
+ * @param address the address being operated on
  * @param load_hit_count a counter to keep track of load hits
  * @param store_hit_count a counter to keep track of store hits
+ * @return the clock cycles that it took to perform the operation
  */
 int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
+/** Function to handle an operation on a no_write_allocate cache 
+ * @param cache the cache
+ * @param is_load whether or not the operation is a load
+ * @param address the address being operated on
+ * @param load_hit_count a counter to keep track of load hits
+ * @param store_hit_count a counter to keep track of store hits
+ * @return the clock cycles that it took to perform the operation
+ */
 int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* load_hit_count, int* store_hit_count);
 
 
-
-
+/** Function to handle a hit on a write-allocate cache
+ * @param slot the slot that was hit
+ * @param is_load whether or not the hit was a load or a store
+ * @param is_write_through whether or not the cache is write through
+ * @param load_hit_count counter to keep track of load hits
+ * @param store_hit_count counter to keep track of store hits
+ * @param penalty the cycle penalty for accessing a multiple of 4 bytes of memory
+ * @return the number of clock cycles that it took to perform the operation
+ */
 int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty);
 
+/** Function to handle a hit on a no-write-allocate cache
+ * @param slot the slot that was hit
+ * @param is_load whether or not the hit was a load or a store
+ * @param load_hit_count counter to keep track of load hits
+ * @param store_hit_count counter to keep track of store hits
+ * @param penalty the cycle penalty for accessing a multiple of 4 bytes of memory
+ * @return the number of clock cycles that it took to perform the operation
+ */
 int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count, int penalty);
-
-
 
 #endif
