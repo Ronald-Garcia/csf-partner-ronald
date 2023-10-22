@@ -8,8 +8,8 @@
 typedef struct Slot {
     uint32_t tag;
     bool valid;
-    uint32_t load_ts;
-    uint32_t access_ts;
+    uint64_t load_ts;
+    uint64_t access_ts;
     bool is_dirty;
 
 } Slot;

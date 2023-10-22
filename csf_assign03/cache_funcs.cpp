@@ -303,7 +303,7 @@ int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, i
     (*store_hit_count)++;
 
     if (is_write_through) {
-        return penalty * MEMORY_PENALTY;
+        return 1 + penalty * MEMORY_PENALTY;
     }
 
     slot->is_dirty = true;
