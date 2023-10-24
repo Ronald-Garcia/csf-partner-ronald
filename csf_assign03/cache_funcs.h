@@ -154,19 +154,17 @@ int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* 
  * @param is_write_through whether or not the cache is write through
  * @param load_hit_count counter to keep track of load hits
  * @param store_hit_count counter to keep track of store hits
- * @param penalty the cycle penalty for accessing a multiple of 4 bytes of memory
  * @return the number of clock cycles that it took to perform the operation
  */
-int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty);
+int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count);
 
 /** Function to handle a hit on a no-write-allocate cache
  * @param slot the slot that was hit
  * @param is_load whether or not the hit was a load or a store
  * @param load_hit_count counter to keep track of load hits
  * @param store_hit_count counter to keep track of store hits
- * @param penalty the cycle penalty for accessing a multiple of 4 bytes of memory
  * @return the number of clock cycles that it took to perform the operation
  */
-int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count, int penalty);
+int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count);
 
 #endif

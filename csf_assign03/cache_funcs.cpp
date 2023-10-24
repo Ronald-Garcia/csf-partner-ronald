@@ -217,13 +217,17 @@ int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* loa
 
         // if there is a match, then its a hit
         if (cur_slot->valid && cur_slot->tag == tag) {
-            return handle_hit_write_allocate(cur_slot, is_load, is_write_through, load_hit_count, store_hit_count, penalty);
+            return handle_hit_write_allocate(cur_slot, is_load, is_write_through, load_hit_count, store_hit_count);
         } 
         
         // if there is an invalid block, we have a miss, but open space. Add to slot.
         // For write-allocate, load and store both load into cache.
         if (!cur_slot->valid) {
             slot_in(cur_slot, tag);
+
+            if (is_write_through && !is_load) {
+                return 1 + penalty * MEMORY_PENALTY + MEMORY_PENALTY;
+            }
             return 1 + penalty * MEMORY_PENALTY;
         }
 
@@ -240,7 +244,12 @@ int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* loa
     if (write_back_dirty_block) {
         return 4 + 2 * penalty * MEMORY_PENALTY;
     }
+
     // if write through, write to memory and save into cache (2)
+    if (is_write_through && !is_load) {
+        return 1 + MEMORY_PENALTY + penalty * MEMORY_PENALTY;
+    }
+
     return 1 + penalty * MEMORY_PENALTY;
 }
 
@@ -262,7 +271,7 @@ int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* 
 
         // if there is a match, then its a hit
         if (cur_slot->valid && cur_slot->tag == tag) { //Hits return immediately.
-            return handle_hit_no_write_allocate(cur_slot, is_load, load_hit_count, store_hit_count, penalty);
+            return handle_hit_no_write_allocate(cur_slot, is_load, load_hit_count, store_hit_count);
         } 
 
         
@@ -276,7 +285,7 @@ int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* 
             }
 
             // if it is a store, write to memory (but do not write to cache)
-            return penalty * MEMORY_PENALTY;
+            return MEMORY_PENALTY;
         }
         
         eviction_slot = choose_eviction(eviction_slot, cur_slot, is_lru);
@@ -289,10 +298,10 @@ int handle_no_write_allocate(Cache* cache, bool is_load, uint32_t address, int* 
         slot_in(eviction_slot, tag);
         return 1 + penalty * MEMORY_PENALTY;
     } 
-    return penalty * MEMORY_PENALTY;
+    return MEMORY_PENALTY;
 }
 
-int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count, int penalty) {
+int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, int* load_hit_count, int* store_hit_count) {
     slot->access_ts = TIME++;
 
     if (is_load) {
@@ -303,14 +312,14 @@ int handle_hit_write_allocate(Slot* slot, bool is_load, bool is_write_through, i
     (*store_hit_count)++;
 
     if (is_write_through) {
-        return 1 + penalty * MEMORY_PENALTY;
+        return 1 + MEMORY_PENALTY;
     }
 
     slot->is_dirty = true;
     return 1;
 }
 
-int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count, int penalty) {
+int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, int* store_hit_count) {
     slot->access_ts = TIME++;
 
     if (is_load) {
@@ -320,5 +329,5 @@ int handle_hit_no_write_allocate(Slot* slot, bool is_load, int* load_hit_count, 
 
     (*store_hit_count)++;
 
-    return penalty * MEMORY_PENALTY;
+    return MEMORY_PENALTY;
 }
