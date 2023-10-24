@@ -242,7 +242,7 @@ int handle_write_allocate(Cache* cache, bool is_load, uint32_t address, int* loa
     // if the slot being evicted is dirty and we are a write back, 
     // additional penalty of storing the dirty block on top of miss.
     if (write_back_dirty_block) {
-        return 4 + penalty * MEMORY_PENALTY + MEMORY_PENALTY;
+        return 4 + 2 * penalty * MEMORY_PENALTY;
     }
 
     // if write through, write to memory and save into cache (2)
