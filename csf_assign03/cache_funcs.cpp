@@ -91,8 +91,8 @@ Cache* initialize_cache(uint32_t num_sets, uint32_t num_slots, uint32_t slot_siz
 
 void delete_cache(Cache* cache) {
 
-    int num_sets = cache->sets.max_size();
-    int num_slots = cache->sets.at(0)->slots.max_size();
+    int num_sets = cache->sets.size();
+    int num_slots = cache->sets.at(0)->slots.size();
 
     for (int i = 0; i < num_sets; i++) {
         for (int j = 0; j < num_slots; j++) {
