@@ -71,14 +71,48 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
   size_t mid = begin + size/2;
 
   // TODO: parallelize the recursive sorting
-  merge_sort(arr, begin, mid, threshold);
+  pid_t pid = fork();
+  if (pid == -1) {
+    fprintf(stderr, "Error: fork process could not be created.");
+    return;
+  }
+
+  if (pid == 0) {
+    // child process
+    merge_sort(arr, begin, mid, threshold);
+
+    exit(0);
+  }
+
+  // parent process
   merge_sort(arr, mid, end, threshold);
+
+  // waiting for child processes
+  int wstatus;
+
+  pid_t actual_pid = waitpid(0, &wstatus, 0);
+
+  if (actual_pid == -1) {
+    if (!WIFEXITED(wstatus)) {
+      fprintf(stderr, "Error: subprocess did not exit normally.");
+      exit(1);
+      return;
+    }
+
+    if (WEXITSTATUS(wstatus) != 0) {
+      fprintf(stderr, "Error: child process exited with a non-zero exit code.");
+      exit(1);
+      return;
+    }
+  }
 
   // allocate temp array now, so we can avoid unnecessary work
   // if the malloc fails
   int64_t *temp_arr = (int64_t *) malloc(size * sizeof(int64_t));
   if (temp_arr == NULL)
     fatal("malloc() failed");
+
+
 
   // child processes completed successfully, so in theory
   // we should be able to merge their results
@@ -106,18 +140,47 @@ int main(int argc, char **argv) {
   char *end;
   size_t threshold = (size_t) strtoul(argv[2], &end, 10);
   if (end != argv[2] + strlen(argv[2])) {
-    // TODO: report an error (threshold value is invalid)
+    fprintf(stderr, "Error: invalid threshold value.");
   }
 
-  // TODO: open the file
+  int fd = open(filename, O_RDWR);
 
-  // TODO: use fstat to determine the size of the file
+  if (fd < 0) {
+    // file could not be opened
+    fprintf(stderr, "Error: file '%s' could not be opened.", filename);
+    return 1;
+  }
 
-  // TODO: map the file into memory using mmap
+  struct stat statbuf;
+  int rc = fstat(fd, &statbuf);
 
-  // TODO: sort the data!
+  if (rc != 0) {
+    // Error in fstat
 
-  // TODO: unmap and close the file
+    fprintf(stderr, "Error: 'fstat' could not be called correctly.");
+    return 1;
+  }
 
-  // TODO: exit with a 0 exit code if sort was successful
+  size_t file_size_in_bytes = statbuf.st_size;
+
+  int64_t *data = mmap(NULL, file_size_in_bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  
+  // closing file descripter to prevent in-use-at-exit leaks.
+  close(fd);
+
+  if (data == MAP_FAILED) {
+    // if mmap had an error, return
+
+    fprintf(stderr, "Error: 'mmap' could not map file data.");
+    return 1;
+  }
+
+  // sorting the data
+  merge_sort(data, 0, file_size_in_bytes / sizeof(int64_t), threshold);
+
+  munmap(data, file_size_in_bytes);
+
+
+  // if no errors occurred, exit with 0.
+  return 0;
 }
