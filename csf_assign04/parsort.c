@@ -70,7 +70,7 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
 
   size_t mid = begin + size/2;
 
-  // TODO: parallelize the recursive sorting
+  // parallelize the recursive sorting
   pid_t pid = fork();
   if (pid == -1) {
     fprintf(stderr, "Error: fork process could not be created.");
