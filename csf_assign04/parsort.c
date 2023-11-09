@@ -66,15 +66,20 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
     return;
   }
 
-  // recursively sort halves in parallel
+  //Base case: if size is 1 or 0, sequential sort, as its trivial sort.
+  if (size <= 1) {
+    seq_sort(arr, begin, end);
+    return;
+  }
 
   size_t mid = begin + size/2;
 
   // parallelize the recursive sorting
+  
   pid_t pid = fork();
   if (pid == -1) {
-    fprintf(stderr, "Error: fork process could not be created.");
-    return;
+    fprintf(stderr, "Error: fork process could not be created.\n");
+    exit(1);
   }
 
   if (pid == 0) {
@@ -90,22 +95,22 @@ void merge_sort(int64_t *arr, size_t begin, size_t end, size_t threshold) {
   // waiting for child processes
   int wstatus;
 
-  pid_t actual_pid = waitpid(0, &wstatus, 0);
+  pid_t actual_pid = waitpid(pid, &wstatus, 0);
 
   if (actual_pid == -1) {
     if (!WIFEXITED(wstatus)) {
-      fprintf(stderr, "Error: subprocess did not exit normally.");
+      fprintf(stderr, "Error: subprocess did not exit normally.\n");
       exit(1);
       return;
     }
 
     if (WEXITSTATUS(wstatus) != 0) {
-      fprintf(stderr, "Error: child process exited with a non-zero exit code.");
+      fprintf(stderr, "Error: child process exited with a non-zero exit code.\n");
       exit(1);
       return;
     }
   }
-
+  
   // allocate temp array now, so we can avoid unnecessary work
   // if the malloc fails
   int64_t *temp_arr = (int64_t *) malloc(size * sizeof(int64_t));
