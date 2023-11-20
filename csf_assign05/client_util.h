@@ -12,6 +12,9 @@ std::string ltrim(const std::string &s);
 std::string rtrim(const std::string &s);
 std::string trim(const std::string &s);
 
+int create_server_socket(int port);
+
+void fatal(const char *msg);
 // you can add additional declarations here...
 
 #endif // CLIENT_UTIL_H
