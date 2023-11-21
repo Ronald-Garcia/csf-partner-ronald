@@ -23,12 +23,28 @@ int main(int argc, char **argv) {
   // Completed: connect to server
   conn.connect(server_hostname, server_port);
 
-  // TODO: send rlogin and join messages (expect a response from
+  // Completed: send rlogin and join messages (expect a response from
   //       the server for each one)
 
-  // TODO: loop waiting for messages from server
-  //       (which should be tagged with TAG_DELIVERY)
+  Message rlogin_message(TAG_RLOGIN, username);
+  Message join_message(TAG_JOIN, room_name);
 
+  if (!conn.send(rlogin_message) && !conn.send(join_message)) {
+    fatal("Server message not received");
+  }
+
+  Message incoming_message;
+
+  while (1) {
+    
+    if (!conn.receive(incoming_message)) {
+      fatal("Error");
+    }
+    if (incoming_message.tag != TAG_DELIVERY) {
+      fatal("Not a delivery");
+    }
+    handle_delivery(incoming_message, room_name);
+  }
 
   return 0;
 }

@@ -27,14 +27,17 @@ Connection::Connection(int fd)
 void Connection::connect(const std::string &hostname, int port) {
 
   // Completed: make server socket
-  int ssock_fd = create_server_socket(port);
+  //int ssock_fd = create_server_socket(port);
+  struct sockaddr_in clientaddr;
 
+  //m_fd = accept_connection(ssock_fd, &clientaddr);
   // Completed: call open_clientfd to connect to the server
 
   std::string p = std::to_string(port);
 
   m_fd = Open_clientfd(hostname.c_str(), p.c_str());
   
+
   if (!Connection::is_open()) {
     fatal("could not connect to server");
   }

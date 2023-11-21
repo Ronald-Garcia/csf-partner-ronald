@@ -14,7 +14,12 @@ std::string trim(const std::string &s);
 
 int create_server_socket(int port);
 
+int accept_connection(int ssock_fd, struct sockaddr_in *clientaddr);
+
 void fatal(const char *msg);
+
+void handle_delivery(Message message, std::string room);
+
 // you can add additional declarations here...
 
 #endif // CLIENT_UTIL_H

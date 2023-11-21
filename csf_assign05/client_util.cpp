@@ -47,6 +47,33 @@ int create_server_socket(int port) {
   return ssock_fd;
 }
 
+/*
+ * SOURCE: EXAMPLE CODE IN LECTURE sockets.zip
+ */
+int accept_connection(int ssock_fd, struct sockaddr_in *clientaddr) {
+  unsigned clientlen = sizeof(clientaddr);
+  int client_fd = accept(ssock_fd, (struct sockaddr *) clientaddr, &clientlen);
+  if (client_fd < 0) 
+    fatal("accept failed");
+  return client_fd;
+}
+
+void handle_delivery(Message message, std::string room) {
+
+  std::string payload = message.data;
+
+  int first_colon_index = payload.find(":");
+  int second_colon_index = payload.substr(first_colon_index + 1).find(":");
+
+  std::string room_name = payload.substr(0, first_colon_index);
+  std::string username = payload.substr(first_colon_index + 1, second_colon_index);
+  std::string message_content = payload.substr(second_colon_index + 1);
+
+  if (room == room_name) {
+    std::cout << username << ": " << message_content << std::endl;
+  } 
+}
+
 void fatal(const char* msg) {
   fprintf(stderr, "%s\n", msg);
   exit(1);
