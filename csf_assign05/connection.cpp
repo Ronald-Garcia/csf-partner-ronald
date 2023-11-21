@@ -24,13 +24,36 @@ Connection::Connection(int fd)
 }
 
 // DONE
-void Connection::connect(const std::string &hostname, int port) {
+void Connection::client_connect(const std::string &hostname, int port) {
 
   // Completed: make server socket
-  int ssock_fd = create_server_socket(port);
-  struct sockaddr_in clientaddr;
+  //int ssock_fd = create_server_socket(port);
+  //struct sockaddr_in clientaddr;
 
-  int client_fd = accept_connection(ssock_fd, &clientaddr);
+  //int client_fd = accept_connection(ssock_fd, &clientaddr);
+  // Completed: call open_clientfd to connect to the server
+
+  std::string p = std::to_string(port);
+
+  m_fd = Open_clientfd(hostname.c_str(), p.c_str());
+  
+
+  if (!Connection::is_open()) {
+    fatal("could not connect to server");
+  }
+
+  // Completed: call rio_readinitb to initialize the rio_t object
+  rio_readinitb(&m_fdbuf, m_fd);  
+}
+
+// DONE
+void Connection::server_connect(const std::string &hostname, int port) {
+
+  // Completed: make server socket
+  //int ssock_fd = create_server_socket(port);
+  //struct sockaddr_in clientaddr;
+
+  //int client_fd = accept_connection(ssock_fd, &clientaddr);
   // Completed: call open_clientfd to connect to the server
 
   std::string p = std::to_string(port);
@@ -72,8 +95,7 @@ bool Connection::send(const Message &msg) {
   }
 
   // Completed: send a message
-  Rio_writen(m_fd, msg.to_string().c_str(), msg.MAX_LEN);
-  Rio_writen(m_fd, "\n", 1);
+  Rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size() + 1);
 
   Message confirmation_msg;
 
@@ -94,7 +116,7 @@ bool Connection::send(const Message &msg) {
 // DONE
 bool Connection::receive(Message &msg) {
 
-  char buf[msg.MAX_LEN];
+  char buf[msg.MAX_LEN + 1];
 
   size_t bytes_read = Rio_readlineb(&m_fdbuf, buf, msg.MAX_LEN);
 
@@ -106,11 +128,10 @@ bool Connection::receive(Message &msg) {
 
   // otherwise, initialize message
   std::string cpp_buf(buf);
-
   std::string delimiter = ":";
   int colon_index = cpp_buf.find(delimiter);
-  std::string tag = cpp_buf.substr(0, colon_index);
-  std::string data = cpp_buf.substr(colon_index + 1);
+  std::string tag = trim(cpp_buf.substr(0, colon_index));
+  std::string data = trim(cpp_buf.substr(colon_index + 1));
 
   // Completed: receive a message, storing its tag and data in msg
   msg.tag = tag;

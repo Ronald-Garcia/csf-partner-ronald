@@ -43,7 +43,14 @@ struct Message {
     : tag(tag), data(data) { }
 
   std::string to_string() const {
-    return tag + ":" + data;
+    std::string ret_string;
+
+    ret_string.append(tag);
+    ret_string.append(":");
+    ret_string.append(data);
+    ret_string.append("\n");
+
+    return ret_string;
   }
 
   bool is_valid_tag() const {

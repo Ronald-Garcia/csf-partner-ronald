@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   Connection conn;
 
   // Completed: connect to server
-  conn.connect(server_hostname, server_port);
+  conn.client_connect(server_hostname, server_port);
 
   // Completed: send rlogin and join messages (expect a response from
   //       the server for each one)
@@ -29,7 +29,10 @@ int main(int argc, char **argv) {
   Message rlogin_message(TAG_RLOGIN, username);
   Message join_message(TAG_JOIN, room_name);
 
-  if (!conn.send(rlogin_message) && !conn.send(join_message)) {
+  bool rlogin_res = !conn.send(rlogin_message);
+  bool join_res =  !conn.send(join_message);
+
+  if (rlogin_res && join_res) {
     fatal("Server message not received");
   }
 
@@ -40,8 +43,14 @@ int main(int argc, char **argv) {
     if (!conn.receive(incoming_message)) {
       fatal("Error");
     }
-    if (incoming_message.tag != TAG_DELIVERY) {
+
+    const char* incoming_tag = incoming_message.tag.c_str();
+    if ( strcmp(incoming_tag, TAG_DELIVERY) ) {
       fatal("Not a delivery");
+    } 
+
+    if (!strcmp(incoming_tag, TAG_ERR)) {
+      fatal("Connection closed unexpectedly.");
     }
     handle_delivery(incoming_message, room_name);
   }

@@ -60,15 +60,20 @@ int accept_connection(int ssock_fd, struct sockaddr_in *clientaddr) {
 
 void handle_delivery(Message message, std::string room) {
 
+  // get message data from message
   std::string payload = message.data;
 
+  // get the first instance of colon
   int first_colon_index = payload.find(":");
-  int second_colon_index = payload.substr(first_colon_index + 1).find(":");
+  // get index in substring then add by offset
+  int second_colon_index = first_colon_index + 1 + payload.substr(first_colon_index + 1).find(":");
 
+  // divide up each string
   std::string room_name = payload.substr(0, first_colon_index);
-  std::string username = payload.substr(first_colon_index + 1, second_colon_index);
+  std::string username = payload.substr(first_colon_index + 1, second_colon_index - first_colon_index - 1);
   std::string message_content = payload.substr(second_colon_index + 1);
 
+  // if room matches, write
   if (room == room_name) {
     std::cout << username << ": " << message_content << std::endl;
   } 

@@ -28,7 +28,10 @@ public:
   ~Connection();
 
   // Connect to a server via specified hostname and port number.
-  void connect(const std::string &hostname, int port);
+  void client_connect(const std::string &hostname, int port);
+
+  // Connect to a server via specified hostname and port number.
+  void server_connect(const std::string &hostname, int port);
 
   bool is_open() const;
 

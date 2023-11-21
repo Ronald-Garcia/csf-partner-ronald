@@ -21,10 +21,25 @@ int main(int argc, char **argv) {
   server_port = std::stoi(argv[2]);
   username = argv[3];
 
-  // TODO: connect to server
+  Connection conn;
 
-  // TODO: send slogin message
+  // Completed: connect to server
+  conn.client_connect(server_hostname, server_port);
 
+  // Completed: send rlogin and join messages (expect a response from
+  //       the server for each one)
+
+  Message slogin_message(TAG_SLOGIN, username);
+  
+  bool slogin_res = !conn.send(slogin_message);
+
+  if (slogin_res) {
+    fatal("Server message not received");
+  }
+  std::string local_buf;
+  while ( std::cin >> local_buf) {
+    Message messageToSend;
+  }
   // TODO: loop reading commands from user, sending messages to
   //       server as appropriate
 
