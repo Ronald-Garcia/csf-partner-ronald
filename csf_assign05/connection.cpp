@@ -5,6 +5,7 @@
 #include "message.h"
 #include "connection.h"
 #include "client_util.h"
+#include <iostream>
 
 // DONE
 Connection::Connection()
@@ -104,8 +105,11 @@ bool Connection::send(const Message &msg) {
 
   bool received_confirmation = Connection::receive(confirmation_msg);
   
-  if (!received_confirmation || confirmation_msg.tag == TAG_ERR) {
+  if (!received_confirmation || confirmation_msg.tag == std::string(TAG_ERR)) {
     m_last_result = EOF_OR_ERROR;
+    if (received_confirmation && confirmation_msg.tag == std::string(TAG_ERR)) {
+      std::cerr << confirmation_msg.data << std::endl;
+    }
     return false;
   }
 

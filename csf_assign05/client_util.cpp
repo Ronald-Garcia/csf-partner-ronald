@@ -4,6 +4,8 @@
 #include "message.h"
 #include "client_util.h"
 #include <netinet/in.h>
+#include <sstream>
+#include <exception>
 
 // string trim functions shamelessly stolen from
 // https://www.techiedelight.com/trim-string-cpp-remove-leading-trailing-spaces/
@@ -79,7 +81,43 @@ void handle_delivery(Message message, std::string room) {
   } 
 }
 
-void fatal(const char* msg) {
-  fprintf(stderr, "%s\n", msg);
+void fatal() {
   exit(1);
+}
+
+Message handle_line_command(std::string line) {
+  
+  
+  Message message_to_send;
+
+  //Place string in string stream.
+  std::stringstream ss;
+  ss.str(line);
+
+  // gets first word of the line
+  std::string cur_word;
+  ss >> cur_word;
+
+  std::string command = cur_word;
+
+  if (command == std::string("/join")) {
+    
+    // get the room name
+    ss >> cur_word;
+
+    std::string room_name = cur_word;
+
+    message_to_send.tag = TAG_JOIN;
+    message_to_send.data = room_name; 
+  } else if (command == std::string("/leave")) {
+    
+    message_to_send.tag = TAG_LEAVE;
+  } else if (command == std::string("/quit")) {
+    message_to_send.tag = TAG_QUIT;
+  } else {
+    throw std::invalid_argument("Invalid argument");
+  }
+
+
+  return message_to_send;
 }

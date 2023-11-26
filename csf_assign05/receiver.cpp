@@ -30,10 +30,13 @@ int main(int argc, char **argv) {
   Message join_message(TAG_JOIN, room_name);
 
   bool rlogin_res = !conn.send(rlogin_message);
+  if (rlogin_res) {
+    exit(1);
+  }
   bool join_res =  !conn.send(join_message);
 
-  if (rlogin_res && join_res) {
-    fatal("Server message not received");
+  if (join_res) {
+    exit(1);
   }
 
   Message incoming_message;

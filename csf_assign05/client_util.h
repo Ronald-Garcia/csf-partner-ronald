@@ -21,4 +21,6 @@ void fatal(const char *msg);
 void handle_delivery(Message message, std::string room);
 // you can add additional declarations here...
 
+Message handle_line_command(std::string line);
+
 #endif // CLIENT_UTIL_H
