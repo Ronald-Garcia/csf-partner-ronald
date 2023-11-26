@@ -36,7 +36,7 @@ void Connection::client_connect(const std::string &hostname, int port) {
 
   std::string p = std::to_string(port);
 
-  m_fd = Open_clientfd(hostname.c_str(), p.c_str());
+  m_fd = open_clientfd(hostname.c_str(), p.c_str());
   
 
   if (!Connection::is_open()) {
@@ -96,7 +96,7 @@ bool Connection::send(const Message &msg) {
   }
 
   // Completed: send a message
-  Rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size() + 1);
+  Rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size());
 
   Message confirmation_msg;
 

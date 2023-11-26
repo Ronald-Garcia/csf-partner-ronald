@@ -113,8 +113,10 @@ Message handle_line_command(std::string line) {
   } else if (command == std::string("/leave")) {
     
     message_to_send.tag = TAG_LEAVE;
+    message_to_send.data = "bye";
   } else if (command == std::string("/quit")) {
     message_to_send.tag = TAG_QUIT;
+    message_to_send.data = "bye";
   } else {
     throw std::invalid_argument("Invalid argument");
   }
