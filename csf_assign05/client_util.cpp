@@ -81,7 +81,8 @@ void handle_delivery(Message message, std::string room) {
   } 
 }
 
-void fatal() {
+void fatal(const char* msg) {
+  fprintf(stderr, "%s\n", msg);
   exit(1);
 }
 

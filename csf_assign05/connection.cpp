@@ -40,7 +40,7 @@ void Connection::client_connect(const std::string &hostname, int port) {
   
 
   if (!Connection::is_open()) {
-    fatal("could not connect to server");
+    fatal("Could not connect to server");
   }
 
   // Completed: call rio_readinitb to initialize the rio_t object

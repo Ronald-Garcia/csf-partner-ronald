@@ -42,24 +42,40 @@ int main(int argc, char **argv) {
   // stores each line of text sent by sender
   std::string local_buf;
 
-  bool invalid_command;
   bool in_room = false;
   while ( !std::cin.eof()) {
-    invalid_command = false;
     Message message_to_send;
     getline(std::cin, local_buf);
 
+    if (std::cin.eof()) {
+      message_to_send.tag = TAG_QUIT;
+      conn.send(message_to_send);
+      exit(0);
+    }
 
-    if (local_buf.at(0) == '\\') {
+    if (local_buf.at(0) == '/') {
       try {
         message_to_send = handle_line_command(local_buf);
-        in_room = conn.send(message_to_send)  // message is sent correctly
-               && message_to_send.tag == std::string(TAG_JOIN); // message was a join message
-               // if the message was anything but a join message, then not in room (quit or leave)
-               // both leave a room
-      } catch (std::invalid_argument) { // only happens if invalid command was used (/command)
+        bool send_res = conn.send(message_to_send);
+        // if the message was sent correctly, 
+        // in a room if join message was sent
+        // not in a room if leave or quit message was sent
+        if (send_res) {
+          in_room = message_to_send.tag == std::string(TAG_JOIN);
+          
+          // if message was quit, stop program
+          if (message_to_send.tag == std::string(TAG_QUIT)) {
+            exit(0);
+          }
+        }
+        // } else if (send_res 
+        //         && (message_to_send.tag == std::string(TAG_LEAVE)
+        //         || message_to_send.tag == std::string(TAG_QUIT))) {
+        //           in_room = false;
+        //         }
+        
+      } catch (std::invalid_argument&) { // only happens if invalid command was used (/command)
         std::cerr << "Invalid command used." << std::endl;
-        invalid_command = true;
       } 
     } else if (in_room) {
       // if in a room, send the message to the room users
