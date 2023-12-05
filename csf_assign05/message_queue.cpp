@@ -1,18 +1,38 @@
 #include <cassert>
 #include <ctime>
 #include "message_queue.h"
+#include "guard.h"
 
 MessageQueue::MessageQueue() {
-  // TODO: initialize the mutex and the semaphore
+  // Complete: initialize the mutex and the semaphore
+
+  if (pthread_mutex_init(&m_lock, NULL)) {
+    throw std::exception();
+  }
+  if (sem_init(&m_avail, 0, QUEUE_MAX)) {
+    throw std::exception();
+  }
 }
 
 MessageQueue::~MessageQueue() {
-  // TODO: destroy the mutex and the semaphore
+  // Completed: destroy the mutex and the semaphore
+  
+  pthread_mutex_destroy(&m_lock);
+  sem_destroy(&m_avail);
 }
 
 void MessageQueue::enqueue(Message *msg) {
-  // TODO: put the specified message on the queue
+  // Completed: put the specified message on the queue
 
+  sem_wait(&m_avail);
+
+  {
+    Guard g(m_lock);
+    m_messages.push_back(msg);
+  }  
+
+  sem_post(&m_avail);
+  
   // be sure to notify any thread waiting for a message to be
   // available by calling sem_post
 }
@@ -29,10 +49,23 @@ Message *MessageQueue::dequeue() {
   // compute a time one second in the future
   ts.tv_sec += 1;
 
-  // TODO: call sem_timedwait to wait up to 1 second for a message
+  // Completed: call sem_timedwait to wait up to 1 second for a message
   //       to be available, return nullptr if no message is available
 
-  // TODO: remove the next message from the queue, return it
+  if (!sem_timedwait(&m_avail, &ts)) {
+    return nullptr;
+  }
   Message *msg = nullptr;
+
+  {
+    Guard g(m_lock);
+    msg = m_messages.front();
+    m_messages.pop_front();
+  }
+
+  sem_post(&m_avail);
+
+
+  // Completed: remove the next message from the queue, return it
   return msg;
 }
