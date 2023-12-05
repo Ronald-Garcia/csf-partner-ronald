@@ -118,6 +118,26 @@ bool Connection::send(const Message &msg) {
 }
 
 // DONE
+bool Connection::server_send(const Message &msg) {
+
+  if (!msg.is_valid_tag()) {
+    m_last_result = INVALID_MSG;
+    return false;
+  }
+
+  // Completed: send a message
+  Rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size());
+
+  // Completed: return true if successful, false if not
+  // Completed: make sure that m_last_result is set appropriately
+
+  m_last_result = SUCCESS;
+
+  return true;
+}
+
+
+// DONE
 bool Connection::receive(Message &msg) {
 
   char buf[msg.MAX_LEN + 1];

@@ -6,7 +6,7 @@
 #include <semaphore.h>
 struct Message;
 
-#define QUEUE_MAX 100
+#define QUEUE_MAX 10
 
 // This data type represents a queue of Messages waiting to
 // be delivered to a receiver
@@ -29,6 +29,7 @@ private:
 
   pthread_mutex_t m_lock; // must be held while accessing queue
   sem_t m_avail;
+  sem_t m_items;
   std::deque<Message *> m_messages;
 };
 

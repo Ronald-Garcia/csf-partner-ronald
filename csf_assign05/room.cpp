@@ -8,17 +8,13 @@ Room::Room(const std::string &room_name)
   : room_name(room_name) {
   // Completed: initialize the mutex
 
-  if (!pthread_mutex_init(&lock, NULL)) {
-    throw std::exception();
-  }
+  pthread_mutex_init(&lock, NULL);
 }
 
 Room::~Room() {
   // Completed: destroy the mutex
 
-  if (!pthread_mutex_destroy(&lock)) {
-    throw std::exception();
-  }
+  pthread_mutex_destroy(&lock);
 }
 
 void Room::add_member(User *user) {
@@ -39,10 +35,11 @@ void Room::remove_member(User *user) {
 
 void Room::broadcast_message(const std::string &sender_username, const std::string &message_text) {
 
-  // TODO: send a message to every (receiver) User in the room
+  // Completed: send a message to every (receiver) User in the room
+
 
   for (UserSet::iterator i = members.begin(); i != members.end(); i++ ) {
-    Message m(TAG_SENDALL, message_text);
+    Message m(TAG_DELIVERY, room_name + std::string(":") + sender_username + std::string(":") + message_text);
     (*i)->mqueue.enqueue(&m);
   }
 }

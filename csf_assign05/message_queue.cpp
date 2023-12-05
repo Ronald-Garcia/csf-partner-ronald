@@ -6,12 +6,10 @@
 MessageQueue::MessageQueue() {
   // Complete: initialize the mutex and the semaphore
 
-  if (pthread_mutex_init(&m_lock, NULL)) {
-    throw std::exception();
-  }
-  if (sem_init(&m_avail, 0, QUEUE_MAX)) {
-    throw std::exception();
-  }
+  pthread_mutex_init(&m_lock, NULL);
+  sem_init(&m_avail, 0, QUEUE_MAX);
+  sem_init(&m_items, 0, 0);
+  
 }
 
 MessageQueue::~MessageQueue() {
@@ -19,6 +17,7 @@ MessageQueue::~MessageQueue() {
   
   pthread_mutex_destroy(&m_lock);
   sem_destroy(&m_avail);
+  sem_destroy(&m_items);
 }
 
 void MessageQueue::enqueue(Message *msg) {
@@ -31,7 +30,7 @@ void MessageQueue::enqueue(Message *msg) {
     m_messages.push_back(msg);
   }  
 
-  sem_post(&m_avail);
+  sem_post(&m_items);
   
   // be sure to notify any thread waiting for a message to be
   // available by calling sem_post
@@ -52,7 +51,7 @@ Message *MessageQueue::dequeue() {
   // Completed: call sem_timedwait to wait up to 1 second for a message
   //       to be available, return nullptr if no message is available
 
-  if (!sem_timedwait(&m_avail, &ts)) {
+  if (!sem_timedwait(&m_items, &ts)) {
     return nullptr;
   }
   Message *msg = nullptr;
