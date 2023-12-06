@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 #include <pthread.h>
+#include "connection.h"
+
 class Room;
 
 class Server {
@@ -16,6 +18,12 @@ public:
   void handle_client_requests();
 
   Room *find_or_create_room(const std::string &room_name);
+
+  typedef struct {
+    Connection* connection;
+    Server* server;
+  } ConnInfo;
+
 
 private:
   // prohibit value semantics
@@ -30,6 +38,7 @@ private:
   int m_ssock;
   RoomMap m_rooms;
   pthread_mutex_t m_lock;
+
 };
 
 #endif // SERVER_H
