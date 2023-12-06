@@ -175,9 +175,11 @@ Server::~Server() {
 bool Server::listen() {
   // Completed: use open_listenfd to create the server socket, return true
   //       if successful, false if not
+  
+  int ssock_fd = create_server_socket(m_port);
 
-  char port = m_port;
-  return open_listenfd(&port) >= 0;
+  
+  return ssock_fd >= 0;
 }
 
 void Server::handle_client_requests() {
