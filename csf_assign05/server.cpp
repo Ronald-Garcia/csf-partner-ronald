@@ -103,16 +103,17 @@ void *worker(void *arg) {
       Message received_message;
       
       if (!connection->receive(received_message)) {
-        
         // no need to check for valid send, as we create the message
+        err_message.data = "invalid message";
         connection->server_send(err_message);
       } else if (received_message.tag == std::string(TAG_JOIN)) {
         cur_room = server->find_or_create_room(received_message.data);
         in_room = true;
-        ok_message.data = "ok joined.";
+        ok_message.data = "ok joined " + std::string(cur_room->get_room_name());
         connection->server_send(ok_message);
       } else if (received_message.tag == std::string(TAG_SENDALL)){
         if(!in_room) {
+          err_message.data = "not in a room";
           connection->server_send(err_message);
         } else {
 
@@ -122,10 +123,15 @@ void *worker(void *arg) {
           connection->server_send(ok_message);
         }
       } else if (received_message.tag == std::string(TAG_LEAVE)) {
-
-        in_room = false;
-        ok_message.data = "ok left";
-        connection->server_send(ok_message);
+        if(in_room) {
+          in_room = false;
+          ok_message.data = "ok left " + std::string(cur_room->get_room_name());
+          connection->server_send(ok_message);
+        }
+        else { //If not in room.
+          err_message.data = "not in a room";
+          connection->server_send(err_message);
+        }
       } else if (received_message.tag == std::string(TAG_QUIT)) {
 
         in_room = false;
@@ -134,6 +140,10 @@ void *worker(void *arg) {
 
         connection->server_send(ok_message);
         quit = true;
+      } else {
+        //We recieved a "valid" messege, but not for sender at this point.
+        err_message.data = "invalid message";
+        connection->server_send(err_message);
       }
 
     }
@@ -176,10 +186,10 @@ bool Server::listen() {
   // Completed: use open_listenfd to create the server socket, return true
   //       if successful, false if not
   
-  int ssock_fd = create_server_socket(m_port);
+  m_ssock = create_server_socket(m_port);
 
   
-  return ssock_fd >= 0;
+  return m_ssock >= 0;
 }
 
 void Server::handle_client_requests() {
