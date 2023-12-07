@@ -37,9 +37,11 @@ void Room::broadcast_message(const std::string &sender_username, const std::stri
 
   // Completed: send a message to every (receiver) User in the room
 
-
+  Message* m = new Message(TAG_DELIVERY, room_name + std::string(":") + sender_username + std::string(":") + message_text);
+    
   for (UserSet::iterator i = members.begin(); i != members.end(); i++ ) {
-    Message m(TAG_DELIVERY, room_name + std::string(":") + sender_username + std::string(":") + message_text);
-    (*i)->mqueue.enqueue(&m);
+    (*i)->mqueue.enqueue(m);
   }
+
+  
 }

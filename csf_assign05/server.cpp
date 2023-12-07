@@ -67,7 +67,7 @@ void *worker(void *arg) {
 
    
 
-  // TODO: depending on whether the client logged in as a sender or
+  // Completed: depending on whether the client logged in as a sender or
   //       receiver, communicate with the client (implementing
   //       separate helper functions for each of these possibilities
   //       is a good idea)
@@ -81,6 +81,9 @@ void *worker(void *arg) {
     // if not slogin, then receiver
     chat_with_receiver(connInfo, user);
   }
+
+  delete connInfo;
+
 
 
   return nullptr;
@@ -108,6 +111,7 @@ void *worker(void *arg) {
         // no need to check for valid send, as we create the message
         err_message.data = "invalid message";
         connection->server_send(err_message);
+        return;
       } else if (received_message.tag == std::string(TAG_JOIN)) { //Join logic.
         cur_room = server->find_or_create_room(received_message.data);
         in_room = true;
@@ -146,6 +150,7 @@ void *worker(void *arg) {
         //We recieved a "valid" messege, but not for sender at this point.
         err_message.data = "invalid message";
         connection->server_send(err_message);
+        return;
       }
 
     }
@@ -168,7 +173,7 @@ void *worker(void *arg) {
       Message received_message;
       
       if (!connection->receive(received_message)) { //Get the messege.
-        // If we did not recieve a message correctly, just leave.
+        connection->close();
         return;
       } else if (received_message.tag == std::string(TAG_JOIN) && (!in_room)){ //If its join
       //Find or create room being referenced, place reciever in that room.
@@ -194,13 +199,15 @@ void *worker(void *arg) {
       //Just try to deque immediately. If fails, loop again.
       new_message_ptr = user.mqueue.dequeue();
       if (new_message_ptr != nullptr) {
-      new_message.tag = new_message_ptr->tag;
-      new_message.data = new_message_ptr->data;
-      connection->server_send(new_message);
+        new_message.tag = new_message_ptr->tag;
+        new_message.data = new_message_ptr->data;
+        connection->server_send(new_message);
       }
     }
     //Remove user from room.
     cur_room->remove_member(&user);
+    
+    delete new_message_ptr;
   }
 
 
@@ -249,7 +256,7 @@ void Server::handle_client_requests() {
     }
 
     pthread_t thr_id;
-    ConnInfo* connInfo = (ConnInfo*) malloc(sizeof(ConnInfo));
+    ConnInfo* connInfo = new ConnInfo;
     connInfo->connection = new Connection(clientfd);
     connInfo->server = this;
 
