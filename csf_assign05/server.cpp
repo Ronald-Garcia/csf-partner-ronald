@@ -98,10 +98,12 @@ void *worker(void *arg) {
     Message err_message(TAG_ERR, "Sorry, you can't do that");
     Message ok_message(TAG_OK, "confirmed.");
 
-    while (!quit) {
+    Message received_message;
 
-      Message received_message;
-      
+    while (!quit) {
+      received_message.tag = "";
+      received_message.data = "";
+
       if (!connection->receive(received_message)) {
         // no need to check for valid send, as we create the message
         err_message.data = "invalid message";
@@ -167,7 +169,7 @@ void *worker(void *arg) {
       
       if (!connection->receive(received_message)) { //Get the messege.
         // If we did not recieve a message correctly, just leave.
-        break;
+        return;
       } else if (received_message.tag == std::string(TAG_JOIN) && (!in_room)){ //If its join
       //Find or create room being referenced, place reciever in that room.
         cur_room = server->find_or_create_room(received_message.data);
@@ -177,15 +179,21 @@ void *worker(void *arg) {
         connection->server_send(ok_message);
         in_room = true;
       } else { //Otherwise, recieved a message that is not valid. Another leave case.
-        break;
+        return;
       }
     }
     //After joining a room, just wait for messages from senders.
+    Message* new_message_ptr;
+    Message new_message;
+
     while (connection->is_open()) {
+      //Reset.
+      new_message_ptr = nullptr;
+      new_message.tag = "";
+      new_message.data = "";
       //Just try to deque immediately. If fails, loop again.
-      Message* new_message_ptr = user.mqueue.dequeue();
+      new_message_ptr = user.mqueue.dequeue();
       if (new_message_ptr != nullptr) {
-      Message new_message;
       new_message.tag = new_message_ptr->tag;
       new_message.data = new_message_ptr->data;
       connection->server_send(new_message);
