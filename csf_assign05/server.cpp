@@ -106,12 +106,12 @@ void *worker(void *arg) {
         // no need to check for valid send, as we create the message
         err_message.data = "invalid message";
         connection->server_send(err_message);
-      } else if (received_message.tag == std::string(TAG_JOIN)) {
+      } else if (received_message.tag == std::string(TAG_JOIN)) { //Join logic.
         cur_room = server->find_or_create_room(received_message.data);
         in_room = true;
         ok_message.data = "ok joined " + std::string(cur_room->get_room_name());
         connection->server_send(ok_message);
-      } else if (received_message.tag == std::string(TAG_SENDALL)){
+      } else if (received_message.tag == std::string(TAG_SENDALL)){ //Send logic.
         if(!in_room) {
           err_message.data = "not in a room";
           connection->server_send(err_message);
@@ -149,14 +149,50 @@ void *worker(void *arg) {
     }
   }
 
-  void chat_with_receiver(Server::ConnInfo* connection, User& user) {
+  void chat_with_receiver(Server::ConnInfo* connInfo, User& user) {
+
+    Connection* connection = connInfo->connection;
+    Server* server = connInfo->server;
+    Room* cur_room;
+
     bool in_room = false;
-    bool quit = false;
 
-    while (!quit) {
-      connection;
+    Message err_message(TAG_ERR, "Sorry, you can't do that");
+    Message ok_message(TAG_OK, "confirmed.");
+
+    //First, get the join message from reciever. If anything but join, send
+    //error back.
+    while (!in_room) {
+      Message received_message;
+      
+      if (!connection->receive(received_message)) { //Get the messege.
+        // If we did not recieve a message correctly, just leave.
+        break;
+      } else if (received_message.tag == std::string(TAG_JOIN) && (!in_room)){ //If its join
+      //Find or create room being referenced, place reciever in that room.
+        cur_room = server->find_or_create_room(received_message.data);
+        cur_room->add_member(&user);
+
+        ok_message.data = "joined room " + std::string(received_message.data);
+        connection->server_send(ok_message);
+        in_room = true;
+      } else { //Otherwise, recieved a message that is not valid. Another leave case.
+        break;
+      }
     }
-
+    //After joining a room, just wait for messages from senders.
+    while (connection->is_open()) {
+      //Just try to deque immediately. If fails, loop again.
+      Message* new_message_ptr = user.mqueue.dequeue();
+      if (new_message_ptr != nullptr) {
+      Message new_message;
+      new_message.tag = new_message_ptr->tag;
+      new_message.data = new_message_ptr->data;
+      connection->server_send(new_message);
+      }
+    }
+    //Remove user from room.
+    cur_room->remove_member(&user);
   }
 
 

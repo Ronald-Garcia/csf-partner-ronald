@@ -51,7 +51,7 @@ Message *MessageQueue::dequeue() {
   // Completed: call sem_timedwait to wait up to 1 second for a message
   //       to be available, return nullptr if no message is available
 
-  if (!sem_timedwait(&m_items, &ts)) {
+  if (sem_timedwait(&m_items, &ts)) { //If wait expires, return null.
     return nullptr;
   }
   Message *msg = nullptr;
