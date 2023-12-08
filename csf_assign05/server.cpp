@@ -49,18 +49,17 @@ void *worker(void *arg) {
   }
   Message response_message;
   if (msg.tag == std::string(TAG_SLOGIN) || msg.tag == std::string(TAG_RLOGIN)) {
-
+    //Good join
     response_message.tag = TAG_OK;
     response_message.data = "logged in";
+    connection->server_send(response_message);
 
   } else {
     
     response_message.tag = TAG_ERR;
-    response_message.data = "Sorry, you can't do that!";
-
-  }
-  if (!connection->server_send(response_message)) {
-    fatal("Against all odds, an invalid message was sent.");
+    response_message.data = "Join error";
+    connection->server_send(response_message);
+    return nullptr;
   }
 
   
@@ -108,10 +107,15 @@ void *worker(void *arg) {
       received_message.data = "";
 
       if (!connection->receive(received_message)) {
-        // no need to check for valid send, as we create the message
+        // for invalid message.
+        if (connection->get_last_result() == Connection::Result::INVALID_MSG) { //Invalid tag handler.
         err_message.data = "invalid message";
         connection->server_send(err_message);
-        return;
+        } else { //Otherwise we had eof or error, in which case we eit.
+          err_message.data = "invalid message";
+          connection->server_send(err_message);
+          return;
+        }
       } else if (received_message.tag == std::string(TAG_JOIN)) { //Join logic.
         cur_room = server->find_or_create_room(received_message.data);
         in_room = true;
@@ -150,7 +154,6 @@ void *worker(void *arg) {
         //We recieved a "valid" messege, but not for sender at this point.
         err_message.data = "invalid message";
         connection->server_send(err_message);
-        return;
       }
 
     }
@@ -173,7 +176,8 @@ void *worker(void *arg) {
       Message received_message;
       
       if (!connection->receive(received_message)) { //Get the messege.
-        connection->close();
+        //If invalid, send error messege.
+        connection->server_send(err_message);
         return;
       } else if (received_message.tag == std::string(TAG_JOIN) && (!in_room)){ //If its join
       //Find or create room being referenced, place reciever in that room.
@@ -183,7 +187,8 @@ void *worker(void *arg) {
         ok_message.data = "joined room " + std::string(received_message.data);
         connection->server_send(ok_message);
         in_room = true;
-      } else { //Otherwise, recieved a message that is not valid. Another leave case.
+      } else { //Otherwise, recieved a message with valid tag, but not for reciever. Leave.
+        connection->server_send(err_message);
         return;
       }
     }
