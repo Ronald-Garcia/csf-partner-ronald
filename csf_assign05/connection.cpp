@@ -90,7 +90,7 @@ void Connection::close() {
 // DONE
 bool Connection::send(const Message &msg) {
 
-  if (!msg.is_valid_tag()) {
+  if (!msg.is_valid_tag() || msg.to_string().size() > msg.MAX_LEN) {
     m_last_result = INVALID_MSG;
     return false;
   }
@@ -126,7 +126,7 @@ bool Connection::server_send(const Message &msg) {
   }
 
   // Completed: send a message
-  Rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size());
+  rio_writen(m_fd, msg.to_string().c_str(), msg.to_string().size());
 
   // Completed: return true if successful, false if not
   // Completed: make sure that m_last_result is set appropriately
@@ -142,7 +142,7 @@ bool Connection::receive(Message &msg) {
 
   char buf[msg.MAX_LEN + 1];
 
-  size_t bytes_read = Rio_readlineb(&m_fdbuf, buf, msg.MAX_LEN);
+  size_t bytes_read = rio_readlineb(&m_fdbuf, buf, msg.MAX_LEN);
 
   // if nothing was read
   if (bytes_read <= 0) {
@@ -162,7 +162,7 @@ bool Connection::receive(Message &msg) {
   msg.data = data;
 
   // return true if valid message
-  if (!msg.is_valid_tag()) {
+  if (!msg.is_valid_tag() || msg.to_string().size() > msg.MAX_LEN) {
     m_last_result = INVALID_MSG;
     return false;
   }
